@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================================================================
+   Design tokens — "Tron x Tesla" dark-signature theme.
+   Light is the default; dark applies via the OS setting OR an explicit
+   [data-theme="dark"] on <html> (set by the in-app theme toggle).
+   Tailwind reads these vars (see tailwind.config.js), so every themed class
+   switches automatically.
+   ========================================================================= */
+
+:root {
+  --bg: #eef1f5;
+  --bg-elev: #e8edf2;
+  --surface: #ffffff;
+  --surface-2: #f3f6f9;
+  --surface-3: #e9eef3;
+  --border: #dde4ea;
+  --border-strong: #cad3dc;
+  --line: rgba(8, 124, 196, 0.4);
+  --text: #0c1620;
+  --text-2: #48586a;
+  --text-3: #79899a;
+  --text-inv: #ffffff;
+  --accent: #087cc4;
+  --accent-2: #0a85d6;
+  --accent-press: #066199;
+  --accent-soft: rgba(8, 124, 196, 0.11);
+  --glow: rgba(8, 124, 196, 0.26);
+  --success: #1a7f37;
+  --success-soft: rgba(26, 127, 55, 0.11);
+  --warning: #9a6700;
+  --warning-soft: rgba(154, 103, 0, 0.12);
+  --manual: #7c3aed;
+  --manual-soft: rgba(124, 58, 237, 0.11);
+  --neutral: #5b6876;
+  --neutral-soft: rgba(91, 104, 118, 0.11);
+  --danger: #cf222e;
+  --danger-soft: rgba(207, 34, 46, 0.1);
+  --focus: rgba(8, 124, 196, 0.45);
+  --shadow: 0 1px 2px rgba(16, 24, 32, 0.06), 0 16px 36px -18px rgba(16, 24, 32, 0.22);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #06080b;
+  --bg-elev: #0a0e13;
+  --surface: #0e141b;
+  --surface-2: #131b24;
+  --surface-3: #18222d;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --line: rgba(56, 189, 248, 0.35);
+  --text: #e7eef4;
+  --text-2: #9fb0bd;
+  --text-3: #647483;
+  --text-inv: #04121b;
+  --accent: #38bdf8;
+  --accent-2: #7dd6fb;
+  --accent-press: #1f9fe0;
+  --accent-soft: rgba(56, 189, 248, 0.13);
+  --glow: rgba(56, 189, 248, 0.5);
+  --success: #3fb950;
+  --success-soft: rgba(63, 185, 80, 0.15);
+  --warning: #e3b341;
+  --warning-soft: rgba(227, 179, 65, 0.15);
+  --manual: #b692ff;
+  --manual-soft: rgba(182, 146, 255, 0.16);
+  --neutral: #6b7785;
+  --neutral-soft: rgba(107, 119, 133, 0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --focus: rgba(56, 189, 248, 0.5);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 16px 40px -16px rgba(0, 0, 0, 0.75);
+  color-scheme: dark;
+}
+
+/* Follow the OS when no explicit choice is stored. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #06080b;
+    --bg-elev: #0a0e13;
+    --surface: #0e141b;
+    --surface-2: #131b24;
+    --surface-3: #18222d;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-strong: rgba(255, 255, 255, 0.13);
+    --line: rgba(56, 189, 248, 0.35);
+    --text: #e7eef4;
+    --text-2: #9fb0bd;
+    --text-3: #647483;
+    --text-inv: #04121b;
+    --accent: #38bdf8;
+    --accent-2: #7dd6fb;
+    --accent-press: #1f9fe0;
+    --accent-soft: rgba(56, 189, 248, 0.13);
+    --glow: rgba(56, 189, 248, 0.5);
+    --success: #3fb950;
+    --success-soft: rgba(63, 185, 80, 0.15);
+    --warning: #e3b341;
+    --warning-soft: rgba(227, 179, 65, 0.15);
+    --manual: #b692ff;
+    --manual-soft: rgba(182, 146, 255, 0.16);
+    --neutral: #6b7785;
+    --neutral-soft: rgba(107, 119, 133, 0.14);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.14);
+    --focus: rgba(56, 189, 248, 0.5);
+    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 16px 40px -16px rgba(0, 0, 0, 0.75);
+    color-scheme: dark;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Draggable strip on macOS (pairs with titleBarStyle: hiddenInset). */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Thin, themed scrollbars. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "_comment": "MA3 Visualization Tab Feedback Messages - Instructors can edit these",
+
+  "BIN_ALL_CORRECT": "All bin table formulas are correct. Your Min, Max, and Width calculations are properly set up.",
+  "BIN_PARTIAL": "{correct} out of 3 bin table formulas are correct. Please review the issues noted below.",
+  "BIN_NONE_CORRECT": "None of the bin table formulas are correct. Please use MIN for the minimum, MAX for the maximum, and (Max-Min)/bins for the width.",
+
+  "BIN_MIN_OK": "Your Bin Min formula in E22 is correct and uses the MIN function to find the smallest difference value.",
+  "BIN_MIN_WRONG": "The Bin Min formula in E22 is incorrect. Please use the MIN function referencing the difference data (D14:D63).",
+  "BIN_MIN_MISSING": "The Bin Min formula in E22 is missing. Please enter a MIN function to find the smallest value in the difference data.",
+
+  "BIN_MAX_OK": "Your Bin Max formula in E23 is correct and uses the MAX function to find the largest difference value.",
+  "BIN_MAX_WRONG": "The Bin Max formula in E23 is incorrect. Please use the MAX function referencing the difference data (D14:D63).",
+  "BIN_MAX_MISSING": "The Bin Max formula in E23 is missing. Please enter a MAX function to find the largest value in the difference data.",
+
+  "BIN_WIDTH_OK": "Your Bin Width formula in E24 is correct and properly calculates (Max - Min) divided by the number of bins.",
+  "BIN_WIDTH_WRONG": "The Bin Width formula in E24 is incorrect. It should calculate (Max - Min) divided by the number of bins.",
+  "BIN_WIDTH_MISSING": "The Bin Width formula in E24 is missing. Please enter a formula that calculates the bin width as (Max - Min) / number of bins.",
+
+  "FREQ_LIMITS_ALL_CORRECT": "All Lower Limit and Upper Limit formulas in the frequency table are correct.",
+  "FREQ_LIMITS_PARTIAL": "{correct} out of {total} Lower/Upper Limit formulas are correct. Please review the issues noted below.",
+  "FREQ_LIMITS_NONE_CORRECT": "None of the Lower/Upper Limit formulas are correct. The Lower Limit should reference the previous Upper Limit, and the Upper Limit should add the bin width.",
+
+  "FREQ_LOWER_OK": "Your Lower Limit formula in {cell} is correct.",
+  "FREQ_LOWER_WRONG": "The Lower Limit formula in {cell} is incorrect. It should reference the Bin Min for the first row, or the previous Upper Limit for subsequent rows.",
+  "FREQ_LOWER_MISSING": "The Lower Limit formula in {cell} is missing.",
+
+  "FREQ_UPPER_OK": "Your Upper Limit formula in {cell} is correct.",
+  "FREQ_UPPER_WRONG": "The Upper Limit formula in {cell} is incorrect. It should equal the Lower Limit plus the Bin Width.",
+  "FREQ_UPPER_MISSING": "The Upper Limit formula in {cell} is missing.",
+
+  "FREQ_DIST_ALL_CORRECT": "All Title of Bin, Frequency, and Relative Frequency formulas are correct.",
+  "FREQ_DIST_PARTIAL": "{correct} out of {total} frequency distribution formulas are correct. Please review the issues noted below.",
+  "FREQ_DIST_NONE_CORRECT": "None of the frequency distribution formulas are correct. Please verify your Title of Bin, Frequency, and Relative Frequency calculations.",
+
+  "FREQ_TITLE_OK": "Your Title of Bin formula in {cell} is correct and calculates the midpoint of the bin.",
+  "FREQ_TITLE_WRONG": "The Title of Bin formula in {cell} is incorrect. It should calculate the midpoint as (Lower Limit + Upper Limit) / 2.",
+  "FREQ_TITLE_MISSING": "The Title of Bin formula in {cell} is missing. Please enter a formula that calculates the midpoint of each bin.",
+
+  "FREQ_COUNT_OK": "Your Frequency formula in {cell} is correct and counts the values within the bin range.",
+  "FREQ_COUNT_WRONG": "The Frequency formula in {cell} is incorrect. Please use COUNTIF, COUNTIFS, or FREQUENCY to count values within each bin's range.",
+  "FREQ_COUNT_MISSING": "The Frequency formula in {cell} is missing. Please enter a counting function to determine how many values fall within this bin.",
+
+  "FREQ_REL_OK": "Your Relative Frequency formula in {cell} is correct.",
+  "FREQ_REL_WRONG": "The Relative Frequency formula in {cell} is incorrect. It should divide the frequency by the total number of data points.",
+  "FREQ_REL_MISSING": "The Relative Frequency formula in {cell} is missing. Please enter a formula that calculates frequency divided by total.",
+
+  "HIST_ALL_CORRECT": "Your histogram is complete with the correct data source, chart title, and axis titles.",
+  "HIST_PARTIAL": "Your histogram meets {correct} out of 6 criteria. Please review the issues noted below.",
+  "HIST_MISSING": "No histogram or bar chart was found on the Visualization tab. Please create a bar chart using your frequency data.",
+
+  "HIST_FOUND": "A bar chart is present on the Visualization tab.",
+  "HIST_WRONG_TYPE": "A chart was found but it is not a bar chart. Please use a bar chart (column chart) for the histogram.",
+
+  "HIST_DATA_OK": "Your chart correctly uses the Frequency column as its data source.",
+  "HIST_DATA_WRONG": "The chart data range is incorrect. The chart should use the Frequency column (G28:G38 or similar) as its values.",
+  "HIST_DATA_MISSING": "Could not verify the chart's data range. Please ensure the chart references the Frequency column.",
+
+  "HIST_LABELS_OK": "Your chart correctly uses the Title of Bin column for category labels.",
+  "HIST_LABELS_WRONG": "The chart category labels are incorrect. The chart should use the Title of Bin column (F28:F38 or similar) for the horizontal axis labels.",
+  "HIST_LABELS_MISSING": "The chart is missing category labels. Please set the Title of Bin column as the category (horizontal) axis labels.",
+
+  "HIST_TITLE_OK": "Your chart has a title: \"{title}\"",
+  "HIST_TITLE_MISSING": "Your chart is missing a title. Please add an appropriate title describing what the histogram displays.",
+
+  "HIST_XAXIS_OK": "Your X-axis has a title: \"{title}\"",
+  "HIST_XAXIS_WRONG": "The X-axis title \"{title}\" is incorrect. {reason}",
+  "HIST_XAXIS_MISSING": "Your chart's X-axis is missing a title. The X-axis should be labeled to describe the bin categories.",
+
+  "HIST_YAXIS_OK": "Your Y-axis has a title: \"{title}\"",
+  "HIST_YAXIS_MISSING": "Your chart's Y-axis is missing a title. The Y-axis should be labeled 'Frequency' or similar.",
+
+  "VIS_FORMAT_ALL_CORRECT": "All cells on the Visualization tab are formatted correctly.",
+  "VIS_FORMAT_PARTIAL": "{correct} out of {total} cells are formatted correctly. Please review the formatting issues noted below.",
+  "VIS_FORMAT_CELL_OK": "Cell {cell} is formatted correctly.",
+  "VIS_FORMAT_CELL_WRONG": "Cell {cell} is not formatted correctly. Please check the number format requirements."
+}

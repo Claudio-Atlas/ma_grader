@@ -1,0 +1,63 @@
+{
+  "UC26_UNIT_VALID_G": "The unit in {cell} is correctly labeled as {unit}.",
+  "UC26_UNIT_VALID_J": "The unit in {cell} is correctly labeled as {unit}.",
+  "UC26_UNIT_INVALID_G": "The unit entered in {cell} is not valid for this conversion. The expected unit should be one of the following: {expected}.",
+  "UC26_UNIT_INVALID_J": "The unit entered in {cell} is not valid for this conversion. The expected unit should be one of the following: {expected}.",
+
+  "UC26_FORMULA_F_VALID": "The formula in {cell} correctly uses the {ratio} conversion ratio.",
+  "UC26_FORMULA_I_VALID": "The formula in {cell} correctly uses the {ratio} conversion ratio.",
+  "UC26_FORMULA_F_INVALID": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+  "UC26_FORMULA_I_INVALID": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+
+  "UC26_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C26, F26, and I26.",
+  "UC26_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+
+  "UC26_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
+  "UC26_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+
+
+  "UC27_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
+  "UC27_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
+
+  "UC27_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
+  "UC27_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+
+  "UC27_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C27, F27, and I27.",
+  "UC27_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+
+  "UC27_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
+  "UC27_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+
+
+  "UC28_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
+  "UC28_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
+
+  "UC28_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
+  "UC28_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+
+  "UC28_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C28, F28, I28, and L28.",
+  "UC28_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+
+  "UC28_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
+  "UC28_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+
+
+  "UC29_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
+  "UC29_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
+
+  "UC29_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
+  "UC29_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+
+  "UC29_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C29, F29, I29, and L29.",
+  "UC29_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+
+  "UC29_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
+  "UC29_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+
+
+  "UC_TEMP_C40_CORRECT": "The formula in {cell} correctly converts Fahrenheit to Celsius using the required (5/9)*(A40-32) structure.",
+  "UC_TEMP_C40_INCORRECT": "The formula in {cell} is incorrect. A valid Celsius conversion must include all of the following components: {required}.",
+
+  "UC_TEMP_A41_CORRECT": "The formula in {cell} correctly converts Celsius back to Fahrenheit using the required (9/5)*C41 + 32 structure.",
+  "UC_TEMP_A41_INCORRECT": "The formula in {cell} is incorrect. A valid Fahrenheit conversion must include all of the following components: {required}."
+}

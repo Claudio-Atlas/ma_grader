@@ -1,0 +1,52 @@
+{
+  "IA_NAME_PRESENT": "Your name is correctly entered in {cell} on the Income Analysis tab.",
+  "IA_NAME_MISSING": "Your name is missing from {cell} on the Income Analysis tab. Please enter your name so the assignment can be identified as yours.",
+
+  "IA_SLOPE_MISSING": "The slope formula in {cell} appears to be missing or is not entered as a valid SLOPE() function.",
+  "IA_SLOPE_CORRECT": "Your slope formula in {cell} is correct and uses the proper B19:B26 (y-values) and A19:A26 (x-values) ranges.",
+  "IA_SLOPE_REVERSED": "Your slope formula in {cell} uses the correct rows but reverses the x- and y-ranges. While this still computes a line, the conventional order is SLOPE(y_range, x_range).",
+  "IA_SLOPE_WRONG_RANGE": "Your slope formula in {cell} uses SLOPE(), but the ranges are incorrect. It should use B19:B26 for y-values and A19:A26 for x-values.",
+
+  "IA_INTERCEPT_MISSING": "The intercept formula in {cell} appears to be missing or is not entered as a valid INTERCEPT() function.",
+  "IA_INTERCEPT_CORRECT": "Your intercept formula in {cell} is correct and uses the proper B19:B26 (y-values) and A19:A26 (x-values) ranges.",
+  "IA_INTERCEPT_REVERSED": "Your intercept formula in {cell} uses the correct rows but reverses the x- and y-ranges. This still computes a line, but it is not in the standard order INTERCEPT(y_range, x_range).",
+  "IA_INTERCEPT_WRONG_RANGE": "Your intercept formula in {cell} uses INTERCEPT(), but the ranges are incorrect. It should use B19:B26 for y-values and A19:A26 for x-values.",
+
+  "IA_SLOPE_FORMAT_CORRECT": "The slope value in {cell} is formatted correctly as a number with 0 decimal places.",
+  "IA_SLOPE_FORMAT_INCORRECT": "The slope value in {cell} is not formatted correctly. It should be displayed as a number with 0 decimal places (for example, 12 or 1,234).",
+  "IA_INTERCEPT_FORMAT_CORRECT": "The intercept value in {cell} is formatted correctly as a number with 0 decimal places.",
+  "IA_INTERCEPT_FORMAT_INCORRECT": "The intercept value in {cell} is not formatted correctly. It should be displayed as a number with 0 decimal places.",
+
+  "IA_PREDICTIONS_ALL_CORRECT": "All predicted income formulas in {range} are correct and reference the slope (B30), intercept (B31), and years of experience.",
+  "IA_PREDICTIONS_NONE_CORRECT": "None of the predicted income formulas in {range} match the expected pattern. These cells should use a formula like =B30*D19+B31 that references the slope, intercept, and years.",
+  "IA_PREDICTIONS_PARTIAL": "{correct} out of {total} predicted income formulas are correct. {issues}",
+  "IA_PREDICTIONS_NOT_FORMULAS": "{count} cells in {range} do not contain formulas. These should be formulas, not hardcoded values.",
+  "IA_PREDICTIONS_MISSING_REFS": "{count} formulas in {range} are missing references to {expected}.",
+  "IA_PREDICTIONS_MISSING_YEARS": "{count} formulas in {range} do not reference the corresponding years of experience cell (D column).",
+  "IA_PREDICTIONS_REFS_BUT_WRONG_VALUE": "{count} formulas in {range} reference B30/B31 but calculate an incorrect value.",
+  "IA_PREDICTIONS_VALUE_BUT_NO_REFS": "{count} cells in {range} have the correct value but do not use a formula referencing B30 and B31.",
+
+  "IA_PRED_FORMAT_ALL_CORRECT": "All predicted income values in {range} are formatted correctly as currency with 0 decimal places.",
+  "IA_PRED_FORMAT_NONE_CORRECT": "None of the predicted income values in {range} are formatted correctly. These cells should be formatted as currency with 0 decimal places.",
+  "IA_PRED_FORMAT_PARTIAL": "{correct} out of {total} predicted income values are formatted correctly as currency with 0 decimal places.",
+
+  "IA_SCATTER_NOT_CHECKED": "The scatterplot portion of the Income Analysis tab is not automatically graded and will be reviewed manually.",
+
+  "IA_SCATTER_NOT_FOUND": "No XY scatter chart was found on the Income Analysis tab. Please create an XY scatter chart using the BLS income data.",
+  "IA_SCATTER_FOUND": "Your XY scatter chart is present and uses the correct chart type.",
+
+  "IA_SCATTER_TITLE_PRESENT": "Your chart has a title: \"{title}\"",
+  "IA_SCATTER_TITLE_MISSING": "Your chart is missing a title. Please add an appropriate title describing the data.",
+
+  "IA_SCATTER_XLABEL_PRESENT": "Your chart has an X-axis label: \"{label}\"",
+  "IA_SCATTER_XLABEL_MISSING": "Your chart is missing an X-axis label. Please add a label describing what the X-axis represents (e.g., Years of Experience).",
+
+  "IA_SCATTER_YLABEL_PRESENT": "Your chart has a Y-axis label: \"{label}\"",
+  "IA_SCATTER_YLABEL_MISSING": "Your chart is missing a Y-axis label. Please add a label describing what the Y-axis represents (e.g., Income).",
+
+  "IA_SCATTER_TRENDLINE_PRESENT": "Your chart has a trendline showing the linear relationship.",
+  "IA_SCATTER_TRENDLINE_MISSING": "Your chart is missing a trendline. Please add a linear trendline to show the relationship between the variables.",
+
+  "IA_SCATTER_EXTENDED_CORRECT": "Your trendline is properly extended to show predictions beyond the original data range.",
+  "IA_SCATTER_EXTENDED_MISSING": "Your trendline should be extended to show predictions from {expected_min} to {expected_max} years. Please extend the axis or trendline to show this range."
+}

@@ -1,0 +1,68 @@
+{
+  "_comment": "MA3 Analysis Tab Feedback Messages - Instructors can edit these",
+
+  "NAME_PRESENT": "Your name is correctly entered in cell B10: {name}.",
+  "NAME_MISSING": "Your name is missing from cell B10. Please enter your full name so the assignment can be identified as yours.",
+  "NAME_TOO_SHORT": "The name in cell B10 appears too short: '{name}'. Please enter your full name.",
+
+  "DIFF_ALL_CORRECT": "All 50 difference formulas in D14:D63 are correct. Each cell properly calculates the difference between the After and Before scores.",
+  "DIFF_ALL_CORRECT_ARRAY": "Your difference calculations are correct using the array formula {formula}. This efficiently calculates all 50 differences at once.",
+  "DIFF_PARTIAL": "{correct} out of 50 difference formulas are correct. Please review the cells listed below.",
+  "DIFF_NONE_CORRECT": "None of the difference formulas in D14:D63 are correct. Each cell should contain a formula like =C14-B14 that subtracts the Before score from the After score.",
+  "DIFF_FORMULA_OK": "Cell {cell} contains the correct difference formula.",
+  "DIFF_FORMULA_MISSING": "Cell {cell} is missing a formula. It should contain =C{row}-B{row} to calculate the difference.",
+  "DIFF_FORMULA_WRONG": "Cell {cell} contains an incorrect formula: '{found}'. It should be =C{row}-B{row} to calculate After minus Before.",
+  "DIFF_NOT_FORMULA": "Cell {cell} contains a typed value instead of a formula. Please enter a formula that references the Before and After cells.",
+  "DIFF_ARRAY_WRONG": "Cell {cell} contains an array formula '{found}' that is incorrect. The expected formula is =C14:C63-B14:B63.",
+
+  "STATS_ALL_CORRECT": "All 12 statistics formulas are correct. Your Mean, Median, Standard Deviation, and Range calculations are properly set up.",
+  "STATS_PARTIAL": "{correct} out of 12 statistics formulas are correct. Please review the issues noted below.",
+  "STATS_PARTIAL_CREDIT": "{full_credit} out of 12 statistics formulas are fully correct, with {partial_credit} receiving partial credit. Your score is {score} out of {max_score}.",
+  "STATS_NONE_CORRECT": "None of the statistics formulas are correct. Please use AVERAGE for mean, MEDIAN for median, STDEV for standard deviation, and MAX-MIN for range.",
+
+  "STAT_MEAN_OK": "Your mean formula in {cell} is correct and uses the AVERAGE function with the proper range.",
+  "STAT_MEAN_WRONG": "The mean formula in {cell} is incorrect. Please use the AVERAGE function to calculate the mean.",
+  "STAT_MEAN_MISSING": "The mean formula in {cell} is missing. Please enter an AVERAGE function referencing the appropriate data range.",
+  "STAT_MEAN_PARTIAL": "The mean formula in {cell} received partial credit: {hint}",
+
+  "STAT_MEDIAN_OK": "Your median formula in {cell} is correct and uses the MEDIAN function with the proper range.",
+  "STAT_MEDIAN_WRONG": "The median formula in {cell} is incorrect. Please use the MEDIAN function to calculate the median.",
+  "STAT_MEDIAN_MISSING": "The median formula in {cell} is missing. Please enter a MEDIAN function referencing the appropriate data range.",
+  "STAT_MEDIAN_PARTIAL": "The median formula in {cell} received partial credit: {hint}",
+
+  "STAT_STDEV_OK": "Your standard deviation formula in {cell} is correct and uses the appropriate STDEV function.",
+  "STAT_STDEV_WRONG": "The standard deviation formula in {cell} is incorrect. Please use STDEV, STDEV.P, or STDEV.S to calculate the standard deviation.",
+  "STAT_STDEV_MISSING": "The standard deviation formula in {cell} is missing. Please enter a standard deviation function referencing the appropriate data range.",
+  "STAT_STDEV_PARTIAL": "The standard deviation formula in {cell} received partial credit: {hint}",
+
+  "STAT_RANGE_OK": "Your range formula in {cell} is correct and properly calculates MAX minus MIN.",
+  "STAT_RANGE_WRONG": "The range formula in {cell} is incorrect. The range should be calculated as MAX minus MIN of the data.",
+  "STAT_RANGE_MISSING": "The range formula in {cell} is missing. Please enter a formula that calculates MAX minus MIN.",
+  "STAT_RANGE_PARTIAL": "The range formula in {cell} received partial credit: {hint}",
+
+  "PERCENTILE_ALL_CORRECT": "Both percentile formulas are correct. Your 25th and 75th percentile calculations use the PERCENTILE function properly.",
+  "PERCENTILE_PARTIAL": "{correct} out of 2 percentile formulas are correct. Please review the issues noted below.",
+  "PERCENTILE_NONE_CORRECT": "Neither percentile formula is correct. Please use PERCENTILE, PERCENTILE.INC, or PERCENTILE.EXC with the difference data range (D14:D63).",
+  "PERCENTILE_OK": "Your percentile formula in {cell} is correct.",
+  "PERCENTILE_WRONG": "The percentile formula in {cell} is incorrect. {reason}",
+  "PERCENTILE_MISSING": "The percentile formula in {cell} is missing. Please enter a PERCENTILE function with the appropriate range and percentile value.",
+
+  "EMPIRICAL_ALL_CORRECT": "Both empirical rule formulas are correct. Your lower and upper bound calculations properly use the mean and standard deviation.",
+  "EMPIRICAL_PARTIAL": "{correct} out of 2 empirical rule bounds are correct.",
+  "EMPIRICAL_NONE_CORRECT": "Neither empirical rule formula is correct. The lower bound should be Mean minus Standard Deviation, and the upper bound should be Mean plus Standard Deviation.",
+  "EMPIRICAL_LOWER_OK": "Your lower bound formula in {cell} is correct (Mean - Standard Deviation).",
+  "EMPIRICAL_LOWER_WRONG": "The lower bound formula in {cell} is incorrect. It should calculate Mean minus Standard Deviation (=I18-I20 or equivalent).",
+  "EMPIRICAL_LOWER_MISSING": "The lower bound formula in {cell} is missing. Please enter a formula that calculates Mean minus Standard Deviation.",
+  "EMPIRICAL_UPPER_OK": "Your upper bound formula in {cell} is correct (Mean + Standard Deviation).",
+  "EMPIRICAL_UPPER_WRONG": "The upper bound formula in {cell} is incorrect. It should calculate Mean plus Standard Deviation (=I18+I20 or equivalent).",
+  "EMPIRICAL_UPPER_MISSING": "The upper bound formula in {cell} is missing. Please enter a formula that calculates Mean plus Standard Deviation.",
+
+  "WRITTEN_FOUND": "Your written analysis for section 5b:\n\"{text}\"",
+  "WRITTEN_MISSING": "The written analysis for section 5b is missing. Please provide your interpretation of the results.",
+  "WRITTEN_TOO_SHORT": "Your written analysis appears brief ({length} characters). Please ensure you have fully addressed the question.",
+
+  "FORMAT_ALL_CORRECT": "All cells on the Analysis tab are formatted correctly.",
+  "FORMAT_PARTIAL": "{correct} out of {total} cells are formatted correctly. Please review the formatting issues noted below.",
+  "FORMAT_CELL_OK": "Cell {cell} is formatted correctly.",
+  "FORMAT_CELL_WRONG": "Cell {cell} should be formatted as Number with 2 decimal places."
+}
