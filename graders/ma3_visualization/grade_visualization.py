@@ -24,13 +24,15 @@ from .check_histogram import check_histogram
 from .check_formatting import check_visualization_formatting
 
 
-def grade_visualization_tab(sheet: Worksheet) -> Dict[str, Any]:
+def grade_visualization_tab(sheet: Worksheet, sheet_data: Worksheet = None) -> Dict[str, Any]:
     """
     Visualization tab grading orchestrator.
-    
+
     Args:
-        sheet: The openpyxl Worksheet object for the Visualization tab
-    
+        sheet: The openpyxl Worksheet object for the Visualization tab (formulas)
+        sheet_data: The Visualization tab loaded data_only (calculated values),
+                    used to verify the bin-width value.
+
     Returns:
         Dict containing scores and feedback for each competency:
             - bin_score, bin_feedback
@@ -40,12 +42,12 @@ def grade_visualization_tab(sheet: Worksheet) -> Dict[str, Any]:
             - format_score, format_feedback
     """
     results: Dict[str, Any] = {}
-    
+
     # ============================================================
     # Bin Table (E22:E24) - 6 points
     # Min, Max, Width formulas
     # ============================================================
-    bin_score, bin_feedback = check_bin_table(sheet)
+    bin_score, bin_feedback = check_bin_table(sheet, sheet_data)
     results["bin_score"] = bin_score
     results["bin_feedback"] = bin_feedback
     
@@ -60,7 +62,7 @@ def grade_visualization_tab(sheet: Worksheet) -> Dict[str, Any]:
     # Title of Bin / Frequency / Relative Frequency - 18 points
     # F28:F38 (Title), G28:G38 (Freq), H28:H38 (RelFreq)
     # ============================================================
-    freqdist_score, freqdist_feedback = check_freq_dist_values(sheet)
+    freqdist_score, freqdist_feedback = check_freq_dist_values(sheet, sheet_data)
     results["freqdist_score"] = freqdist_score
     results["freqdist_feedback"] = freqdist_feedback
     

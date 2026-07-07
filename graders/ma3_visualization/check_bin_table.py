@@ -67,46 +67,71 @@ def _check_max_formula(formula: str) -> bool:
     return False
 
 
-def _check_width_formula(formula: str) -> bool:
+# The frequency table has 11 bins (rows 28-38), so the bin width is the data
+# range divided by 11.
+NUM_BINS = 11
+
+
+def _check_width_formula(formula: str, values_sheet=None) -> bool:
     """
-    Check if formula calculates bin width.
-    
-    Expected patterns:
-        =(E23-E22)/10
+    Check if formula calculates the bin width = (max - min) / number_of_bins.
+
+    Accept:
         =(E23-E22)/11
-        =($E$23-$E$22)/10
-        =(Max-Min)/n
+        =($E$23-$E$22)/11
+        =(MAX(...)-MIN(...))/11
+
+    Reject:
+        - wrong divisors (/5, /10, /50, ...) — must divide by 11 bins
+        - the un-parenthesized =E23-E22/11, which Excel evaluates as
+          E23-(E22/11) because division binds tighter than subtraction.
     """
     if not formula or not formula.startswith("="):
         return False
-    
-    normalized = _normalize_formula(formula)
-    
-    # Remove dollar signs for easier matching
-    normalized_no_dollars = normalized.replace("$", "")
-    
-    # Must have division
+
+    normalized = _normalize_formula(formula).replace("$", "")
+
+    # Must have division.
     if "/" not in normalized:
         return False
-    
-    # Should reference E22 and E23 (or calculate max-min)
-    if "E22" in normalized_no_dollars and "E23" in normalized_no_dollars:
+
+    # Divisor (number of bins) must be exactly 11 (not part of a longer number).
+    div_ok = bool(re.search(r'/\(?11\)?(?![\d.])', normalized))
+
+    # The subtraction must be grouped so operator precedence is correct.
+    grouped_cells = ("(E23-E22)" in normalized) or ("(E22-E23)" in normalized)
+    grouped_maxmin = (
+        "MAX(" in normalized and "MIN(" in normalized and "-" in normalized
+    )
+
+    if div_ok and (grouped_cells or grouped_maxmin):
         return True
-    
-    # Or reference the max/min cells with subtraction
-    if "MAX" in normalized and "MIN" in normalized and "-" in normalized:
-        return True
-    
+
+    # Value-based fallback: accept if the computed width equals (max-min)/11,
+    # however the student expressed it (e.g. referencing a bin-count cell).
+    if values_sheet is not None:
+        try:
+            mn = float(values_sheet["E22"].value)
+            mx = float(values_sheet["E23"].value)
+            got = float(values_sheet["E24"].value)
+            expected = (mx - mn) / float(NUM_BINS)
+            if expected != 0 and abs(got - expected) / abs(expected) <= 0.001:
+                return True
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+
     return False
 
 
-def check_bin_table(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
+def check_bin_table(sheet: Worksheet, values_sheet: Worksheet = None) -> Tuple[float, List[Tuple[str, dict]]]:
     """
     Check bin table formulas in E22, E23, E24.
-    
+
     Args:
-        sheet: Visualization worksheet
-        
+        sheet: Visualization worksheet (formulas)
+        values_sheet: Visualization worksheet loaded data_only (calculated values),
+                      used as a fallback to verify the bin-width value.
+
     Returns:
         Tuple of (score, feedback_list)
     """
@@ -150,7 +175,7 @@ def check_bin_table(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         feedback.append(("BIN_WIDTH_MISSING", {}))
     elif not isinstance(formula, str) or not formula.startswith("="):
         feedback.append(("BIN_WIDTH_WRONG", {}))
-    elif _check_width_formula(formula):
+    elif _check_width_formula(formula, values_sheet):
         correct_count += 1
         feedback.append(("BIN_WIDTH_OK", {}))
     else:

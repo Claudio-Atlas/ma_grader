@@ -152,7 +152,8 @@ def phase1_grade_all_students_ma3(
                 try:
                     logger.debug(f"  Grading Visualization tab...")
                     ws_viz = student_wb[sheet_map["Visualization"]]
-                    viz_results = grade_visualization_tab(ws_viz)
+                    ws_viz_data = student_wb_data[sheet_map["Visualization"]]
+                    viz_results = grade_visualization_tab(ws_viz, ws_viz_data)
                     write_ma3_visualization_results(ws_grading, viz_results)
                     logger.debug(f"  Visualization tab complete")
                 except Exception as e:

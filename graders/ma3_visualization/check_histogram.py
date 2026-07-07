@@ -14,6 +14,25 @@ from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.chart import BarChart
 
 
+_TITLE_PLACEHOLDERS = (
+    "title", "chart title", "axis title", "axis title 1",
+    "title of bin", "title of the bin", "title of bins",
+)
+
+
+def _is_placeholder_title(text: Optional[str]) -> bool:
+    """True if the title is empty or one of Excel's default placeholder strings
+    (or the assignment's 'Title of Bin' label), which shouldn't earn credit."""
+    if not text or not text.strip():
+        return True
+    s = text.strip().lower()
+    if s in _TITLE_PLACEHOLDERS:
+        return True
+    if "title of" in s:  # "Title of the bin", "Title of Bins", etc.
+        return True
+    return False
+
+
 def _extract_title_text(title_obj) -> Optional[str]:
     """Extract readable text from chart title object."""
     if title_obj is None:
@@ -121,87 +140,87 @@ def check_histogram(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         feedback.append(("HIST_WRONG_TYPE", {}))
         return 0.0, feedback
     
-    # Chart exists and is bar type - 1 point
+    # ---- (1) A bar/column chart exists — 1.0 -------------------------------
     score += 1.0
     feedback.append(("HIST_FOUND", {}))
-    
-    # Check data ranges
+
+    # ---- (2) Values = Frequency (G) 2.0  /  (3) Categories = Bin titles (F) 1.0
+    values_ok = categories_ok = False
     if hasattr(bar_chart, 'series') and bar_chart.series:
         series = bar_chart.series[0]
         values_ok, categories_ok, values_ref, categories_ref = _check_data_range(series)
-        
-        # Values (Frequency) - 2 points
+
         if values_ok:
             score += 2.0
             feedback.append(("HIST_DATA_OK", {}))
         else:
-            if values_ref:
-                feedback.append(("HIST_DATA_WRONG", {}))
-            else:
-                feedback.append(("HIST_DATA_MISSING", {}))
-        
-        # Categories (Title of Bin) - 1 point
+            feedback.append(("HIST_DATA_WRONG", {}) if values_ref else ("HIST_DATA_MISSING", {}))
+
         if categories_ok:
             score += 1.0
             feedback.append(("HIST_LABELS_OK", {}))
         else:
-            if categories_ref:
-                feedback.append(("HIST_LABELS_WRONG", {}))
-            else:
-                feedback.append(("HIST_LABELS_MISSING", {}))
+            feedback.append(("HIST_LABELS_WRONG", {}) if categories_ref else ("HIST_LABELS_MISSING", {}))
     else:
         feedback.append(("HIST_DATA_MISSING", {}))
         feedback.append(("HIST_LABELS_MISSING", {}))
-    
-    # Check chart title - 1 point
+
+    # ---- (4) Gap width = 0% (histogram, not a gapped bar chart) — 0.5 -------
+    # openpyxl exposes the bar spacing as gapWidth (Excel default 150). A true
+    # histogram has touching bars, i.e. gapWidth == 0.
+    gap_width = getattr(bar_chart, "gapWidth", None)
+    if gap_width == 0:
+        score += 0.5
+        feedback.append(("HIST_GAP_OK", {}))
+    else:
+        feedback.append(("HIST_GAP_WRONG", {"gap": gap_width if gap_width is not None else "not 0%"}))
+
+    # ---- (5) Chart title present and not a placeholder — 0.5 ---------------
     chart_title = _extract_title_text(bar_chart.title)
-    if chart_title and chart_title.strip():
-        score += 1.0
-        feedback.append(("HIST_TITLE_OK", {"title": chart_title}))
-    else:
-        feedback.append(("HIST_TITLE_MISSING", {}))
-    
-    # Check axis titles - 0.5 each
-    x_title = None
-    y_title = None
-    
-    if hasattr(bar_chart, 'x_axis') and bar_chart.x_axis:
-        x_title = _extract_title_text(bar_chart.x_axis.title)
-    
-    if hasattr(bar_chart, 'y_axis') and bar_chart.y_axis:
-        y_title = _extract_title_text(bar_chart.y_axis.title)
-    
-    # X-axis should be bins/categories, NOT "Frequency"
-    # "Frequency" on X-axis is a common mistake (swapped axes)
-    if x_title and x_title.strip():
-        x_title_lower = x_title.strip().lower()
-        if "frequency" in x_title_lower or "freq" == x_title_lower:
-            # Wrong - "Frequency" should be on Y-axis, not X-axis
-            feedback.append(("HIST_XAXIS_WRONG", {
-                "title": x_title,
-                "reason": "X-axis should show bin labels, not 'Frequency'"
-            }))
+    if _is_placeholder_title(chart_title):
+        if chart_title and chart_title.strip():
+            feedback.append(("HIST_TITLE_PLACEHOLDER", {"title": chart_title}))
         else:
-            score += 0.5
-            feedback.append(("HIST_XAXIS_OK", {"title": x_title}))
+            feedback.append(("HIST_TITLE_MISSING", {}))
     else:
+        score += 0.5
+        feedback.append(("HIST_TITLE_OK", {"title": chart_title}))
+
+    # ---- (6) X-axis (valid, not placeholder / not "Frequency") + Y-axis — 0.5 each
+    x_title = _extract_title_text(bar_chart.x_axis.title) if getattr(bar_chart, 'x_axis', None) else None
+    y_title = _extract_title_text(bar_chart.y_axis.title) if getattr(bar_chart, 'y_axis', None) else None
+
+    if not x_title or not x_title.strip():
         feedback.append(("HIST_XAXIS_MISSING", {}))
-    
-    # Y-axis should be "Frequency" or similar
+    elif "frequency" in x_title.strip().lower():
+        # "Frequency" belongs on the Y-axis (swapped-axes mistake).
+        feedback.append(("HIST_XAXIS_WRONG", {
+            "title": x_title, "reason": "The X-axis should show the bin labels, not 'Frequency'."}))
+    elif _is_placeholder_title(x_title):
+        feedback.append(("HIST_XAXIS_WRONG", {
+            "title": x_title, "reason": "This is a placeholder label — name the data, e.g. 'Change in Scores'."}))
+    else:
+        score += 0.5
+        feedback.append(("HIST_XAXIS_OK", {"title": x_title}))
+
     if y_title and y_title.strip():
         score += 0.5
         feedback.append(("HIST_YAXIS_OK", {"title": y_title}))
     else:
         feedback.append(("HIST_YAXIS_MISSING", {}))
-    
-    # Round score
+
+    # ---- Gate: a chart that doesn't plot the Frequency data can't be a correct
+    # histogram, so cap the total at 2.0 no matter how well it's labeled. --------
+    core_data_ok = values_ok
     score = round(score, 2)
-    
-    # Add summary
+    if not core_data_ok and score > 2.0:
+        score = 2.0
+        feedback.append(("HIST_CAPPED", {}))
+
+    # Summary
     if score == 6.0:
         feedback = [("HIST_ALL_CORRECT", {})]
     else:
-        criteria_met = int(score)
-        feedback.insert(0, ("HIST_PARTIAL", {"correct": criteria_met}))
-    
+        feedback.insert(0, ("HIST_PARTIAL", {"correct": round(score, 2)}))
+
     return score, feedback

@@ -23,13 +23,18 @@ def _is_number_format_2dp(format_code: str) -> bool:
 
 
 def _is_number_format_0dp(format_code: str) -> bool:
-    """Check if format shows 0 decimal places (integer)."""
-    if not format_code:
+    """Check if format shows 0 decimal places (integer).
+
+    NOTE: Excel's default "General" is NOT counted as correct — an unformatted
+    cell hasn't been explicitly formatted as an integer, and counting it inflated
+    scores on blank sheets (the "11 of 58 correct when nothing was done" bug).
+    """
+    if not format_code or format_code == "General":
         return False
-    # "0" or "General" with no decimals
-    if format_code in ["0", "#,##0", "General"]:
+    # Explicit integer format like "0" or "#,##0"
+    if format_code in ["0", "#,##0"]:
         return True
-    # Number without decimal portion
+    # Number without a decimal portion
     if "0" in format_code and "." not in format_code:
         return True
     return False
@@ -55,49 +60,42 @@ def check_visualization_formatting(sheet: Worksheet) -> Tuple[float, List[Tuple[
     feedback = []
     correct_count = 0
     total_checks = 0
-    
-    # Bin table cells (E22:E24) - should be 2 decimal places
-    for cell_ref in ["E22", "E23", "E24"]:
-        total_checks += 1
-        cell = sheet[cell_ref]
-        if _is_number_format_2dp(cell.number_format):
-            correct_count += 1
-        else:
-            feedback.append(("VIS_FORMAT_CELL_WRONG", {"cell": cell_ref}))
-    
-    # Lower/Upper limits and Title of Bin - 2 decimal places
-    for row in range(28, 39):
-        for col in ["D", "E", "F"]:
+
+    # Each category is (label, list-of-cells, format-test). We tally correct vs
+    # total per category so the detailed feedback reflects the actual failing
+    # cells (previously only the bin table reported problems, so the count and
+    # the listed issues disagreed).
+    categories = [
+        ("E22:E24 (Bin Min/Max/Width — 2 decimals)",
+         ["E22", "E23", "E24"], _is_number_format_2dp),
+        ("D28:F38 (Limits & Bin Titles — 2 decimals)",
+         [f"{c}{r}" for r in range(28, 39) for c in ("D", "E", "F")], _is_number_format_2dp),
+        ("G28:G38 (Frequency — 0 decimals)",
+         [f"G{r}" for r in range(28, 39)], _is_number_format_0dp),
+        ("H28:H38 (Relative Frequency — percentage)",
+         [f"H{r}" for r in range(28, 39)], _is_percentage_format),
+    ]
+
+    for label, cells, test in categories:
+        cat_correct = 0
+        for cell_ref in cells:
             total_checks += 1
-            cell_ref = f"{col}{row}"
-            cell = sheet[cell_ref]
-            if _is_number_format_2dp(cell.number_format):
-                correct_count += 1
-            # Don't add individual feedback for each cell (too verbose)
-    
-    # Frequency - 0 decimal places
-    for row in range(28, 39):
-        total_checks += 1
-        cell_ref = f"G{row}"
-        cell = sheet[cell_ref]
-        if _is_number_format_0dp(cell.number_format):
-            correct_count += 1
-    
-    # Relative Frequency - percentage
-    for row in range(28, 39):
-        total_checks += 1
-        cell_ref = f"H{row}"
-        cell = sheet[cell_ref]
-        if _is_percentage_format(cell.number_format):
-            correct_count += 1
-    
+            if test(sheet[cell_ref].number_format):
+                cat_correct += 1
+        correct_count += cat_correct
+        # Report any category with formatting problems, showing how many.
+        if cat_correct < len(cells):
+            feedback.append(("VIS_FORMAT_CELL_WRONG", {
+                "cell": f"{label}: {cat_correct}/{len(cells)} correct"
+            }))
+
     # Calculate score (4 points total)
     score = round((correct_count / total_checks) * 4.0, 2)
-    
+
     # Summary feedback
     if correct_count == total_checks:
         feedback = [("VIS_FORMAT_ALL_CORRECT", {})]
     else:
         feedback.insert(0, ("VIS_FORMAT_PARTIAL", {"correct": correct_count, "total": total_checks}))
-    
+
     return score, feedback

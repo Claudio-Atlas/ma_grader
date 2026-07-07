@@ -178,18 +178,27 @@ def _check_mean_formula(formula: str, col: str) -> Union[float, str]:
     Check if formula uses AVERAGE function with correct range.
     Returns: score multiplier (1.0, 0.75, 0.5, 0.0) or error code string
     """
+    normalized = _normalize_formula(formula)
+
+    # For the Mean of the Differences (I18): mean(after) - mean(before) equals
+    # the mean of the differences exactly, so =H18-G18 is fully correct. Checked
+    # before the AVERAGE gate below because this form uses no function.
+    if col == "I":
+        mean_diff = normalized.replace("$", "").replace("(", "").replace(")", "")
+        if mean_diff == "=H18-G18":
+            return CREDIT_FULL
+
     func = _extract_function_name(formula)
     if func != "AVERAGE":
         return CREDIT_NONE
-    
-    normalized = _normalize_formula(formula)
+
     col_map = {"G": "B", "H": "C", "I": "D"}
     expected_col = col_map.get(col, "")
-    
+
     # Check for ANCHORARRAY (Excel 365 spill reference) - valid for column I (differences)
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
-    
+
     # Check for the exact correct range pattern
     range_patterns = [
         f"{expected_col}14:{expected_col}63",
@@ -197,11 +206,11 @@ def _check_mean_formula(formula: str, col: str) -> Union[float, str]:
         f"${expected_col}14:${expected_col}63",
         f"{expected_col}$14:{expected_col}$63",
     ]
-    
+
     for pattern in range_patterns:
         if pattern in normalized:
             return CREDIT_FULL
-    
+
     # Check for partial credit: comma or minus instead of colon
     if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
         return CREDIT_COMMA_NOT_COLON
