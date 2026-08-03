@@ -29,23 +29,17 @@ def grade_budget_row30(ws):
     val = ws["D30"].value
 
     if isinstance(val, str) and val.startswith("="):
-        f = normalize_formula(val)
-
-        # required references
-        has_d28 = "d28" in f
-        has_d29 = "d29" in f
-
-        # must multiply
-        has_mult = "*" in f
-
-        # acceptable forms of (1+D29) or (D29+1)
-        has_growth = ("1+d29" in f) or ("d29+1" in f)
-
-        if (has_d28 and has_d29 and has_mult and has_growth) or \
-                formulas_equivalent(val, "=D28*(1+D29)"):
+        # Use the equivalence engine as the authority: it respects parentheses
+        # and exponents, so =D28*(1+D29) and =(1+D29)*D28 pass, but the wrong
+        # =D28*(1+D29)^5 is correctly rejected. The old substring test stripped
+        # parentheses and ignored "^", so it let the ^5 version through.
+        if formulas_equivalent(val, "=D28*(1+D29)"):
             total_points = 3
         else:
-            comments.append("D30 must be =D28*(1+D29) or an equivalent form.")
+            comments.append(
+                "D30 must be =D28*(1+D29) or an equivalent form "
+                "(note: raising to a power, e.g. ^5, is incorrect here)."
+            )
     else:
         comments.append("D30 must contain a formula multiplying D28 by (1 + D29).")
 

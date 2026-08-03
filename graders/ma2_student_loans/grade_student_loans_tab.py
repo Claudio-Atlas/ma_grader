@@ -21,11 +21,13 @@ def grade_student_loans_tab(student_file_path):
 
         ws_f = wb_f["Student Loans"]
         ws_v = wb_v["Student Loans"]
+        # The workbook's own Mortgage Rates tab is the authoritative rate source.
+        mortgage_ws = wb_v["Mortgage Rates"] if "Mortgage Rates" in wb_v.sheetnames else None
 
         # -----------------------------
         # Run all sub-graders
         # -----------------------------
-        mortgage_lookup = grade_mortgage_rate_lookup(ws_v)
+        mortgage_lookup = grade_mortgage_rate_lookup(ws_v, mortgage_ws)
 
         payment_params = grade_payment_parameters(student_file_path)
 

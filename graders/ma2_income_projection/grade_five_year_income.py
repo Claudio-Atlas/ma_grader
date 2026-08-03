@@ -1,4 +1,4 @@
-from utilities.formula_equiv import formulas_equivalent
+from utilities.formula_equiv import formulas_equivalent, equivalent_to_any
 
 
 def grade_five_year_income(ws):
@@ -37,13 +37,15 @@ def grade_five_year_income(ws):
         "=(k34+1)*k35",
     }
 
-    if f in valid_forms or formulas_equivalent(formula, "=K35*(1+K34)"):
+    # K35 is defined as =B11 (current income), so =B11*(1+K34) is an equivalent
+    # way to write =K35*(1+K34) — accept either reference.
+    if f in valid_forms or equivalent_to_any(formula, ["=K35*(1+K34)", "=B11*(1+K34)"]):
         result["points"] = 3
         result["comment"] = "Projected 5-year income formula is correct."
     else:
         result["comment"] = (
-            "Incorrect 5-year income formula. Expected one of: "
-            "=K35*(1+K34), =(1+K34)*K35, =K35*(K34+1), or =(K34+1)*K35."
+            "Incorrect 5-year income formula. Expected =K35*(1+K34) "
+            "(or =B11*(1+K34)) or an equivalent form."
         )
 
     return result
