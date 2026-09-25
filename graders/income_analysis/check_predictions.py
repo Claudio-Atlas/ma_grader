@@ -23,6 +23,7 @@ import re
 from typing import Tuple, List, Dict, Any
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.worksheet.formula import ArrayFormula
+from utilities.formula_equiv import formulas_equivalent
 
 
 def _has_required_refs(formula: str) -> bool:
@@ -162,7 +163,9 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
     if e19_formula:
         norm = e19_formula.upper().replace("$", "").replace(" ", "")
         d_range = re.search(r"D(\d+):D(\d+)", norm)
-        if "B30" in norm and "B31" in norm and d_range:
+        # Require multiplication (slope * years), so the wrong all-addition
+        # spill form =B30+D19:D35+B31 does not get full credit.
+        if "B30" in norm and "B31" in norm and "*" in norm and d_range:
             start, end = int(d_range.group(1)), int(d_range.group(2))
             if start <= 19 and end >= 35:
                 return 6.0, [("IA_PREDICTIONS_ALL_CORRECT", {"range": "E19:E35"})]
@@ -192,16 +195,22 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
         
         # Check 1: Does formula reference B30 AND B31?
         has_slope_intercept = _has_required_refs(formula)
-        
+
         # Check 2: Does formula reference the years column for this row?
         has_years = _has_years_ref(formula, row)
-        
+
         # Check 3: Does formula have y=mx+b structure (for partial credit)?
         has_linear_structure = _has_linear_structure(formula)
-        
+
+        # Check 4: Is it MATHEMATICALLY the prediction slope*years+intercept?
+        # This is what rejects the wrong all-addition form =B30+D{row}+B31, which
+        # references the right cells but doesn't multiply. The equivalence engine
+        # accepts operand-order variants (=D{row}*B30+B31, =B31+B30*D{row}).
+        is_math_correct = formulas_equivalent(formula, f"=B30*D{row}+B31")
+
         # Categorize the result
-        if has_slope_intercept and has_years:
-            # Formula is correct
+        if is_math_correct:
+            # Formula is correct (references AND multiplies correctly)
             correct_count += 1
         elif has_slope_intercept and not has_years:
             # Has slope/intercept but wrong/missing years reference
@@ -209,8 +218,8 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
         elif not has_slope_intercept and has_years and has_linear_structure:
             # Has y=mx+b structure with years ref but hardcoded slope/intercept
             hardcoded_linear += 1
-        elif not has_slope_intercept:
-            # Missing slope and/or intercept reference (no valid structure)
+        else:
+            # Missing refs, or refs present but wrong structure (e.g. + instead of *)
             missing_slope_intercept += 1
 
     # ============================================================

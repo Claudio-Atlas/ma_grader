@@ -118,6 +118,7 @@ def phase1_grade_all_students_ma2(
         try:
             logger.debug(f"  Loading submission: {submission_file}")
             student_wb = load_workbook(submission_file, data_only=False)
+            student_wb_data = load_workbook(submission_file, data_only=True)  # calculated values
 
             logger.debug(f"  Loading grading sheet: {grading_file}")
             grading_wb = load_workbook(grading_file)
@@ -138,7 +139,8 @@ def phase1_grade_all_students_ma2(
                 try:
                     logger.debug(f"  Grading Income and Projection tab...")
                     ws_income = student_wb[sheet_map["Income and Projection"]]
-                    income_results = grade_income_projection_tab(ws_income)
+                    ws_income_data = student_wb_data[sheet_map["Income and Projection"]]
+                    income_results = grade_income_projection_tab(ws_income, ws_income_data)
                     write_income_projection_results(ws_grading, income_results)
                     logger.debug(f"  Income and Projection tab complete")
                 except Exception as e:

@@ -45,8 +45,10 @@ def write_income_projection_results(ws_grading, results):
         ws_grading["F8"] = results["formatting_section"]["points"]
         ws_grading["G8"] = results["formatting_section"]["comment"]
 
-        # --- Optional total verification ---
-        ws_grading["F9"] = results.get("total_points", "")
+        # --- Section total: keep it a LIVE formula so it updates if an
+        # instructor edits any of the section scores (F3:F8) by hand. Writing a
+        # hard-coded number here (the old behavior) silently broke the total. ---
+        ws_grading["F9"] = "=SUM(F3:F8)"
 
         #print("✅ Income and Projection results written successfully.")
 

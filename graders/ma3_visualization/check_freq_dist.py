@@ -386,12 +386,14 @@ def check_freq_dist_values(sheet: Worksheet, values_sheet: Worksheet = None) -> 
             if isinstance(v, (int, float)):
                 freq_sum += v
                 have_values = True
+        # NOTE: this is a manual-review FLAG only — it does NOT deduct points.
+        # A shortfall can be caused by an upstream error (wrong bin width or
+        # limits) that is already graded elsewhere, or by unreliable cached
+        # values, so auto-deducting here caused false negatives. We surface it
+        # for the instructor to check the boundaries/bin width by eye.
         if data_count > 0 and have_values and freq_sum > 0:
             missing = data_count - int(round(freq_sum))
             if missing > 0:
-                capped = max(0, total_rows - missing)
-                if correct_freq > capped:
-                    correct_freq = capped
                 feedback.append(("FREQ_COUNT_UNDERCOUNT", {
                     "counted": int(round(freq_sum)),
                     "total": data_count

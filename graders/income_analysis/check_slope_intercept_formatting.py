@@ -61,9 +61,12 @@ def _is_zero_decimal_number_format(fmt: str) -> bool:
         "#,##0_);[Red](#,##0)",     # Accounting format (negative in red)
         "0_);(0)",
         "0_);[Red](0)",
-        "General",                   # General format displays whole numbers as integers
     }
-    
+
+    # NOTE: "General" is intentionally NOT accepted. It's the default/unformatted
+    # state, and the slope/intercept values are decimals, so General displays
+    # many decimal places — the student must actually apply a 0-decimal format
+    # to earn this point.
     if fmt in allowed_exact:
         return True
     

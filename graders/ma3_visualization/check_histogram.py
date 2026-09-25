@@ -9,6 +9,7 @@ Grading: 6 points total
     - 1 pt: Chart has X and Y axis titles (0.5 each)
 """
 
+import re
 from typing import Tuple, List, Optional
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.chart import BarChart
@@ -54,6 +55,15 @@ def _extract_title_text(title_obj) -> Optional[str]:
     return str(title_obj) if title_obj else None
 
 
+def _cols_in_ref(ref) -> set:
+    """Return the set of column letters referenced in a chart range string,
+    e.g. "'Visualization'!$G$28:$G$38" -> {"G"}."""
+    if not ref:
+        return set()
+    body = str(ref).split("!")[-1]  # drop sheet prefix
+    return {m.group(1).upper() for m in re.finditer(r'\$?([A-Za-z]{1,3})\$?\d+', body)}
+
+
 def _check_data_range(series) -> Tuple[bool, bool, str, str]:
     """
     Check if chart series uses correct data ranges.
@@ -81,25 +91,15 @@ def _check_data_range(series) -> Tuple[bool, bool, str, str]:
     except Exception:
         pass
     
-    # Check if values reference column G (Frequency)
-    if values_ref:
-        values_ref_upper = values_ref.upper()
-        # Should reference column G, rows around 28-38
-        if "$G$" in values_ref_upper or "!G" in values_ref_upper or "'G" in values_ref_upper:
-            if "28" in values_ref or "38" in values_ref:
-                values_ok = True
-        # Also accept without sheet prefix
-        if values_ref_upper.startswith("G") or "!$G" in values_ref_upper:
-            values_ok = True
-    
-    # Check if categories reference column F (Title of Bin)
-    if categories_ref:
-        categories_ref_upper = categories_ref.upper()
-        if "$F$" in categories_ref_upper or "!F" in categories_ref_upper or "'F" in categories_ref_upper:
-            if "28" in categories_ref or "38" in categories_ref:
-                categories_ok = True
-        if categories_ref_upper.startswith("F") or "!$F" in categories_ref_upper:
-            categories_ok = True
+    # Values may reference the Frequency column (G) OR the Relative Frequency
+    # column (H) — a relative-frequency histogram is equally valid.
+    values_cols = _cols_in_ref(values_ref)
+    if values_cols & {"G", "H"}:
+        values_ok = True
+
+    # Category labels should reference the Title of Bin column (F).
+    if "F" in _cols_in_ref(categories_ref):
+        categories_ok = True
     
     return values_ok, categories_ok, values_ref or "", categories_ref or ""
 

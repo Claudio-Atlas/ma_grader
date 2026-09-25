@@ -35,6 +35,27 @@ def _normalize_formula(formula: str) -> str:
     return formula.replace(" ", "").upper()
 
 
+def _has_correct_range(normalized: str, expected_col: str) -> bool:
+    """True if the formula references the correct data range for `expected_col`.
+
+    Accepts the exact data range col14:col63 (with optional $), OR a whole-column
+    reference col:col. Uses word boundaries so an over-extended range like
+    B14:B630 is NOT accepted as B14:B63 (the previous substring test did).
+    """
+    if not expected_col:
+        return False
+    c = expected_col
+    # Exact 14:63 range, not preceded/followed by another digit (rejects B14:B630).
+    exact = r'(?<![A-Z0-9])\$?' + c + r'\$?14:\$?' + c + r'\$?63(?![0-9])'
+    if re.search(exact, normalized):
+        return True
+    # Whole-column reference, e.g. B:B or $B:$B.
+    whole = r'(?<![A-Z0-9])\$?' + c + r':\$?' + c + r'(?![0-9A-Z])'
+    if re.search(whole, normalized):
+        return True
+    return False
+
+
 def _extract_function_name(formula: str) -> str:
     """Extract the main function name from a formula."""
     if not formula or not formula.startswith("="):
@@ -199,17 +220,9 @@ def _check_mean_formula(formula: str, col: str) -> Union[float, str]:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
 
-    # Check for the exact correct range pattern
-    range_patterns = [
-        f"{expected_col}14:{expected_col}63",
-        f"${expected_col}$14:${expected_col}$63",
-        f"${expected_col}14:${expected_col}63",
-        f"{expected_col}$14:{expected_col}$63",
-    ]
-
-    for pattern in range_patterns:
-        if pattern in normalized:
-            return CREDIT_FULL
+    # Full credit for the exact data range (or a whole-column reference).
+    if _has_correct_range(normalized, expected_col):
+        return CREDIT_FULL
 
     # Check for partial credit: comma or minus instead of colon
     if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
@@ -243,16 +256,9 @@ def _check_median_formula(formula: str, col: str) -> float:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
     
-    range_patterns = [
-        f"{expected_col}14:{expected_col}63",
-        f"${expected_col}$14:${expected_col}$63",
-        f"${expected_col}14:${expected_col}63",
-        f"{expected_col}$14:{expected_col}$63",
-    ]
-    
-    for pattern in range_patterns:
-        if pattern in normalized:
-            return CREDIT_FULL
+    # Full credit for the exact data range (or a whole-column reference).
+    if _has_correct_range(normalized, expected_col):
+        return CREDIT_FULL
     
     # Check for partial credit: comma instead of colon
     if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
@@ -298,16 +304,9 @@ def _check_stdev_formula(formula: str, col: str) -> float:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
     
-    range_patterns = [
-        f"{expected_col}14:{expected_col}63",
-        f"${expected_col}$14:${expected_col}$63",
-        f"${expected_col}14:${expected_col}63",
-        f"{expected_col}$14:{expected_col}$63",
-    ]
-    
-    for pattern in range_patterns:
-        if pattern in normalized:
-            return CREDIT_FULL
+    # Full credit for the exact data range (or a whole-column reference).
+    if _has_correct_range(normalized, expected_col):
+        return CREDIT_FULL
     
     # Check for partial credit: comma instead of colon
     if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
@@ -352,15 +351,8 @@ def _check_range_formula(formula: str, col: str) -> float:
     if expected_col not in normalized:
         return CREDIT_NONE
     
-    # Check for exact correct ranges in both MAX and MIN
-    correct_range_patterns = [
-        f"{expected_col}14:{expected_col}63",
-        f"${expected_col}$14:${expected_col}$63",
-    ]
-    
-    has_correct_range = any(pattern in normalized for pattern in correct_range_patterns)
-    
-    if has_correct_range:
+    # Full credit for the exact data range (or a whole-column reference).
+    if _has_correct_range(normalized, expected_col):
         return CREDIT_FULL
     
     # Check for comma instead of colon in MAX or MIN
@@ -423,8 +415,16 @@ def check_statistics(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         cell_ref = f"{col}{row}"
         cell = sheet[cell_ref]
         formula = cell.value
-        
-        if formula is None or str(formula).strip() == "":
+
+        # Array/CSE-entered formulas come back as an ArrayFormula object, not a
+        # string — pull the underlying formula text so e.g. {=MEDIAN(D14:D63)}
+        # is graded like the normal formula instead of being marked wrong.
+        if not isinstance(formula, str):
+            array_text = getattr(formula, "text", None)
+            if isinstance(array_text, str) and array_text.startswith("="):
+                formula = array_text
+
+        if formula is None or (isinstance(formula, str) and formula.strip() == ""):
             feedback.append((missing_code, {"cell": cell_ref}))
         elif not isinstance(formula, str) or not formula.startswith("="):
             feedback.append((wrong_code, {"cell": cell_ref}))

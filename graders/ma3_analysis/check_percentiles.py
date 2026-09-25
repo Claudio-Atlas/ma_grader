@@ -131,24 +131,17 @@ def _check_percentile_formula(
     if not has_percentile:
         return False, "Missing PERCENTILE function"
     
-    # Check for correct range reference (D14:D63 or ANCHORARRAY or D:D column ref)
-    range_patterns = [
-        "D14:D63", "$D$14:$D$63", "$D14:$D63", "D$14:D$63",  # Explicit range
-        "D14:D31", "$D$14:$D$31",  # Shorter range (partial credit worthy but accept)
-        "ANCHORARRAY",  # Excel 365 spill reference
-        "D:D", "$D:$D",  # Entire column reference (valid approach)
-    ]
-    has_correct_range = any(pattern in normalized for pattern in range_patterns)
-    
-    if not has_correct_range:
-        # Check if they at least reference column D with some range
-        if "D" in normalized and ("14" in normalized or ":" in normalized):
-            return True, "Range reference may be non-standard but appears valid"
-        return False, "Incorrect range reference"
-    
-    # If we get here, student has a valid PERCENTILE formula with correct range
-    # We give full credit regardless of the exact percentile value used
-    return True, "Correct"
+    # Require the correct data range: exact D14:D63 (optional $), a whole-column
+    # reference D:D, or a spill (ANCHORARRAY). Use word boundaries so an
+    # over-extended range like D14:D630 — or a truncated one like D14:D43 — is
+    # NOT accepted (the old loose fallback let any D-range through).
+    exact = re.search(r'(?<![A-Z0-9])\$?D\$?14:\$?D\$?63(?![0-9])', normalized)
+    whole = re.search(r'(?<![A-Z0-9])\$?D:\$?D(?![0-9A-Z])', normalized)
+    has_anchor = "ANCHORARRAY" in normalized
+
+    if exact or whole or has_anchor:
+        return True, "Correct"
+    return False, "Incorrect range reference (should be D14:D63)"
 
 
 def check_percentiles(

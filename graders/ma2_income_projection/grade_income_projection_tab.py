@@ -7,11 +7,14 @@ from graders.ma2_income_projection.grade_income_projection_formatting import gra
 
 
 
-def grade_income_projection_tab(ws):
+def grade_income_projection_tab(ws, ws_data=None):
     """
     Master wrapper for 'Income and Projection' tab.
     Returns each section's points and comments separately
     so the writer can easily map them into the Grading Sheet.
+
+    ws_data (optional): the tab loaded data_only=True, used so the CPI table's
+    year column grades correctly when entered as =previous+1 formulas.
     """
 
     results = {}
@@ -19,7 +22,7 @@ def grade_income_projection_tab(ws):
     try:
         # --- Individual sub-graders ---
         name = grade_income_projection_name(ws)
-        cpi_values = grade_income_projection_cpi_values(ws)
+        cpi_values = grade_income_projection_cpi_values(ws, ws_data)
         slope = grade_slope_formula(ws)
         intercept = grade_intercept_formula(ws)
         cpi_projection = grade_cpi_projection_section(ws)

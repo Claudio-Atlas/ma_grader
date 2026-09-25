@@ -59,5 +59,5 @@
   "HIST_GAP_WRONG": "Your chart's bars have gaps between them (gap width is not 0%), so it is a bar chart, not a histogram. Set the gap width to 0%.",
   "HIST_TITLE_PLACEHOLDER": "Your chart title \"{title}\" is a placeholder. Please give it a real title describing the data, e.g. 'Change in Scores'.",
   "HIST_CAPPED": "Because the chart does not plot the Frequency data, it cannot be a correct histogram, so the histogram score is capped at 2 out of 6.",
-  "FREQ_COUNT_UNDERCOUNT": "Your frequencies total {counted} of the {total} data values, so some values are not being counted. With no buffer on the maximum, the final bin must use \"<=\" (not \"<\"); also check that your lower bound uses \">=\". Every value must fall into exactly one bin."
+  "FREQ_COUNT_UNDERCOUNT": "[MANUAL REVIEW] The frequencies total {counted} of the {total} data values. This can be normal (it often reflects the bin width or bin limits, which are graded separately) — please just verify by eye that the bin width, limits, and boundary operators are correct. No points were deducted here."
 }

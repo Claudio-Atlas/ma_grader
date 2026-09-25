@@ -2,6 +2,8 @@
 
 import re
 
+from utilities.formula_equiv import formulas_equivalent
+
 
 def _normalize_formula(formula):
     """
@@ -127,76 +129,35 @@ def grade_row21_usd_conversion_back_v2(sheet, values_sheet=None):
         source_budget_cell = f"{col}{budget_row}"
 
         raw_formula = sheet[cell_ref].value
-        
+        expected_formula = f"=D4/{source_rate_cell}"
+
         # -----------------------------
-        # Formula check (BULLETPROOF - refs + value)
+        # Formula check — the equivalence engine is the authority. It requires
+        # D4 DIVIDED BY the rate, so it correctly rejects =D4*{rate} (multiply)
+        # and =C20/{rate} (wrong numerator) while accepting algebraic variants
+        # like =D4*(1/{rate}).
         # -----------------------------
         if not isinstance(raw_formula, str) or not raw_formula.startswith("="):
-            feedback.append(("CC21_FORMULA_MISSING", {"cell": cell_ref, "expected": f"=D4/{source_rate_cell}"}))
+            feedback.append(("CC21_FORMULA_MISSING", {"cell": cell_ref, "expected": expected_formula}))
+        elif formulas_equivalent(raw_formula, expected_formula):
+            formula_score += 2.0
+            feedback.append(("CC21_FORMULA_OK", {"cell": cell_ref, "found": raw_formula}))
         else:
-            # Method 1: Check for required cell references
-            # The formula should reference D4 (USD amount) AND the rate cell (C19/D19/etc.)
-            # OR it could reference the budget cell (C20/D20) and rate cell
-            has_required_refs = (
-                _formula_contains_refs(raw_formula, [usd_cell, source_rate_cell]) or
-                _formula_contains_refs(raw_formula, [source_budget_cell, source_rate_cell])
-            )
-            
-            # Method 2: Check exact formula match (traditional approach)
-            cleaned = _normalize_formula(raw_formula)
-            expected = _normalize_formula(f"{usd_cell}/{source_rate_cell}")
-            exact_match = (cleaned == expected)
-            
-            # Method 3: Verify calculated value is correct (if values_sheet provided)
-            value_correct = False
-            if values_sheet is not None and d4_value is not None:
-                rate_value = _get_cell_value_safe(sheet, source_rate_cell)
-                if rate_value is not None and rate_value != 0:
-                    expected_value = d4_value / rate_value
-                    actual_value = _get_cell_value_safe(values_sheet, cell_ref)
-                    value_correct = _values_match(actual_value, expected_value)
-            
-            # Check if formula has division (correct concept) but hardcoded values
-            has_division = "/" in raw_formula or "1/" in raw_formula
-            
-            # Award credit: need refs + value (if we can check), or exact match
-            if exact_match:
-                formula_score += 2.0
-                feedback.append(("CC21_FORMULA_OK", {"cell": cell_ref, "expected": f"=D4/{source_rate_cell}"}))
-            elif has_required_refs:
-                if values_sheet is None:
-                    # Can't verify value, trust the references
-                    formula_score += 2.0
-                    feedback.append(("CC21_FORMULA_OK", {
-                        "cell": cell_ref, 
-                        "expected": f"=D4/{source_rate_cell}",
-                        "note": "Formula uses correct cell references"
-                    }))
-                elif value_correct:
-                    # References correct AND value correct - full credit
-                    formula_score += 2.0
-                    feedback.append(("CC21_FORMULA_OK", {
-                        "cell": cell_ref, 
-                        "expected": f"=D4/{source_rate_cell}",
-                        "note": "Formula uses correct cell references and value is correct"
-                    }))
-                else:
-                    # References correct but value wrong - no credit
-                    feedback.append(("CC21_FORMULA_BAD", {
-                        "cell": cell_ref, 
-                        "expected": f"=D4/{source_rate_cell}",
-                        "note": "Formula has correct refs but calculated value is incorrect"
-                    }))
-            elif has_division:
-                # Partial credit: formula shows correct concept (division) but hardcoded values
+            norm = _normalize_formula(raw_formula)
+            has_division = "/" in raw_formula
+            has_d4 = "d4" in norm
+            if has_division and has_d4:
+                # Divides D4 but by the wrong cell / a hardcoded rate — partial.
                 formula_score += 0.75
                 feedback.append(("CC21_FORMULA_PARTIAL", {
                     "cell": cell_ref,
-                    "expected": f"=D4/{source_rate_cell}",
-                    "note": "Formula uses division (correct concept) but hardcoded values. Use cell references for full credit."
+                    "expected": expected_formula,
+                    "found": raw_formula,
                 }))
             else:
-                feedback.append(("CC21_FORMULA_BAD", {"cell": cell_ref, "expected": f"=D4/{source_rate_cell}"}))
+                feedback.append(("CC21_FORMULA_BAD", {
+                    "cell": cell_ref, "expected": expected_formula, "found": raw_formula,
+                }))
 
         # -----------------------------
         # Formatting check (same acceptance logic as V1)

@@ -133,11 +133,16 @@ def grade_budget_pie_chart(ws):
     pts = 0.0
     notes = []
 
+    # A pie chart that doesn't plot the Total Annual Cost data isn't showing the
+    # right thing at all — a student can see that at a glance — so its overall
+    # score is capped (see the cap applied at the end), regardless of title/legend.
+    data_is_correct = (val_col == "D")
+
     # 1) Pie chart of the Total Annual Cost entries (column D) — 3 pts
-    if val_col == "D":
+    if data_is_correct:
         pts += 3.0
     else:
-        pts += 1.5  # credit for a pie chart, but data isn't the Total Annual Cost column
+        pts += 1.0  # a pie chart exists, but the data is wrong
         found = f" (found column {val_col})" if val_col else ""
         notes.append(
             f"Pie chart present, but its values should come from the Total Annual "
@@ -160,6 +165,15 @@ def grade_budget_pie_chart(ws):
         pts += 1.0
     else:
         notes.append("Add percentage data labels to the pie slices.")
+
+    # Cap: if the chart doesn't plot the correct data, it fails to show the right
+    # thing, so it can earn at most 2 of 6 no matter how it's titled/labeled.
+    if not data_is_correct and pts > 2.0:
+        pts = 2.0
+        notes.append(
+            "Because the chart isn't plotting the Total Annual Cost data, its score "
+            "is capped at 2 of 6."
+        )
 
     if not notes:
         notes.append(
