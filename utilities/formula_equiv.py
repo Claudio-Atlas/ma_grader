@@ -60,11 +60,34 @@ def _normalize(formula):
     return f
 
 
+# Placeholders for parentheses that have already been rewritten, so the
+# innermost-group pattern below can work outward through nested calls.
+_OPEN, _CLOSE = "\x00", "\x01"
+
+
+def _split_top_level(inner):
+    """Split on commas that aren't inside an already-rewritten group."""
+    parts, depth, cur = [], 0, ""
+    for ch in inner:
+        if ch == _OPEN:
+            depth += 1
+        elif ch == _CLOSE:
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    parts.append(cur)
+    return parts
+
+
 def _func_to_python(f):
-    """Rewrite SUM/MIN/MAX/AVERAGE(range or args) into Python, expanding ranges."""
+    """Rewrite SUM/MIN/MAX/AVERAGE/ABS/ROUND(range or args) into Python,
+    expanding ranges. Handles nesting, e.g. MIN(B25,MAX(C18,C17*B25))."""
     def expand_args(inner):
         parts = []
-        for token in inner.split(","):
+        for token in _split_top_level(inner):
             token = token.strip()
             m = _RANGE_RE.fullmatch(token)
             if m:
@@ -73,28 +96,28 @@ def _func_to_python(f):
                 parts.append(token)
         return parts
 
-    # Repeatedly replace the innermost supported function call.
-    pattern = re.compile(r"\b(sum|min|max|average|abs|round)\s*\(([^()]*)\)", re.I)
+    # Repeatedly rewrite the innermost parenthesised group (a supported function
+    # call, or plain grouping parens). Rewritten groups use placeholder parens so
+    # they never match again — re-emitting "(" here would loop forever.
+    pattern = re.compile(r"(\b(?:sum|min|max|average|abs|round)\s*)?\(([^()]*)\)", re.I)
     while True:
         m = pattern.search(f)
         if not m:
             break
-        name = m.group(1).lower()
-        args = expand_args(m.group(2))
-        if name == "sum":
-            repl = "(" + "+".join(args) + ")"
-        elif name == "min":
-            repl = "min(" + ",".join(args) + ")"
-        elif name == "max":
-            repl = "max(" + ",".join(args) + ")"
-        elif name == "average":
-            repl = "((" + "+".join(args) + ")/" + str(len(args)) + ")"
-        elif name == "abs":
-            repl = "abs(" + ",".join(args) + ")"
-        elif name == "round":
-            repl = "round(" + ",".join(args) + ")"
+        name = (m.group(1) or "").strip().lower()
+        if not name:
+            repl = _OPEN + m.group(2) + _CLOSE
+        else:
+            args = expand_args(m.group(2))
+            if name == "sum":
+                repl = _OPEN + "+".join(args) + _CLOSE
+            elif name == "average":
+                repl = _OPEN + _OPEN + "+".join(args) + _CLOSE + "/" + str(len(args)) + _CLOSE
+            else:
+                # min/max/abs/round -> the x-prefixed helpers in _PY_FUNCS.
+                repl = "x" + name + _OPEN + ",".join(args) + _CLOSE
         f = f[: m.start()] + repl + f[m.end():]
-    return f
+    return f.replace(_OPEN, "(").replace(_CLOSE, ")")
 
 
 def _refs(formula):
@@ -115,15 +138,18 @@ _ALLOWED_NODES = (
 )
 
 
+_PY_FUNCS = {"xmin": min, "xmax": max, "xabs": abs, "xround": round}
+
+
 def _safe_eval(expr, env):
     tree = ast.parse(expr, mode="eval")
     for node in ast.walk(tree):
         if not isinstance(node, _ALLOWED_NODES):
             raise ValueError(f"unsupported expression element: {type(node).__name__}")
         if isinstance(node, ast.Call):
-            if not isinstance(node.func, ast.Name) or node.func.id not in ("min", "max", "abs", "round"):
+            if not isinstance(node.func, ast.Name) or node.func.id not in _PY_FUNCS:
                 raise ValueError("unsupported function")
-    return eval(compile(tree, "<formula>", "eval"), {"__builtins__": {}, "min": min, "max": max, "abs": abs, "round": round}, env)
+    return eval(compile(tree, "<formula>", "eval"), {"__builtins__": {}, **_PY_FUNCS}, env)
 
 
 def _evaluate(formula, values):
@@ -167,3 +193,20 @@ def equivalent_to_any(student, canonicals, trials=12, tol=1e-7):
     Use a list when a cell has genuinely distinct valid approaches (e.g. a sum
     form and an expanded-product form that reference different cells)."""
     return any(formulas_equivalent(student, c, trials, tol) for c in (canonicals or []))
+
+
+def can_evaluate(formula):
+    """True if the engine can numerically evaluate `formula` (it references at
+    least one cell and uses only supported syntax). Lets callers tell "wrong
+    math" apart from "can't check" when formulas_equivalent returns False."""
+    return formulas_equivalent(formula, formula, trials=1)
+
+
+def equivalent_or_rounded(student, canonical, max_digits=4):
+    """Like formulas_equivalent, but also accepts the canonical formula wrapped
+    in ROUND(..., k) for k = 0..max_digits (e.g. =ROUND(D4/C19,2))."""
+    if not isinstance(canonical, str):
+        return False
+    body = canonical[1:] if canonical.startswith("=") else canonical
+    variants = [canonical] + [f"=ROUND({body},{k})" for k in range(max_digits + 1)]
+    return equivalent_to_any(student, variants)

@@ -14,6 +14,12 @@ def _norm(f):
     )
 
 
+def _sum_reaches(f, col, excel_row):
+    """True if normalized formula f is =SUM({col}25:{col}n) with n >= excel_row."""
+    m = re.fullmatch(rf"=sum\({col}25:{col}(\d+)\)", f)
+    return m is not None and int(m.group(1)) >= excel_row
+
+
 def _check_j25_years(ws_formulas, payoff_month, excel_row, value_ok=False):
     """
     J25 = number of years to pay off.
@@ -28,7 +34,9 @@ def _check_j25_years(ws_formulas, payoff_month, excel_row, value_ok=False):
     # Years to pay off = (payoff month) / 12. The month may come from any month
     # cell in column A (the student references their own payoff row) or be typed,
     # and payments-per-year may be the literal 12 or a reference to C15.
-    if value_ok or re.fullmatch(r"=a\d+/(12|c15)", f) or re.fullmatch(r"=\d+/(12|c15)", f):
+    # The fallback only applies when the value couldn't be confirmed, so it must
+    # point at the payoff row (=A{payoff row}/12) or type the payoff month.
+    if value_ok or re.fullmatch(rf"=(a{excel_row}|{payoff_month})/(12|c15)", f):
         return {
             "points": 3,
             "comment": "J25 correctly calculates years to pay off (months ÷ 12 or ÷ C15).",
@@ -49,10 +57,10 @@ def _check_j26_total_paid(ws_formulas, excel_row, value_ok=False):
     formula = ws_formulas["J26"].value
     f = _norm(formula)
 
-    # Total paid = SUM of the Payment column from row 25 down to the student's own
-    # payoff/last row (any end row is fine — trailing rows are 0, so the sum is
-    # the same). Accept =SUM(C25:C{n}) for any n.
-    if value_ok or re.fullmatch(r"=sum\(c25:c\d+\)", f):
+    # Total paid = SUM of the Payment column from row 25 down to at least the
+    # payoff row (rows past payoff are 0, so a longer range is fine; a shorter
+    # one misses payments).
+    if value_ok or _sum_reaches(f, "c", excel_row):
         return {
             "points": 3,
             "comment": "J26 correctly sums the Payment column from C25 to the payoff row.",
@@ -76,7 +84,7 @@ def _check_j27_interest(ws_formulas, excel_row, value_ok=False):
 
     # Total interest = total paid (J26) minus the original balance (referenced as
     # B25 or C14), OR the SUM of the monthly-interest column E down to any end row.
-    if value_ok or f in ("=j26-b25", "=j26-c14") or re.fullmatch(r"=sum\(e25:e\d+\)", f):
+    if value_ok or f in ("=j26-b25", "=j26-c14") or _sum_reaches(f, "e", excel_row):
         return {
             "points": 3,
             "comment": "J27 correctly calculates total interest (J26 minus the balance, or SUM of column E).",

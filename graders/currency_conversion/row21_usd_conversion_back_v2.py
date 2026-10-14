@@ -2,7 +2,7 @@
 
 import re
 
-from utilities.formula_equiv import formulas_equivalent
+from utilities.formula_equiv import can_evaluate, equivalent_or_rounded
 
 
 def _normalize_formula(formula):
@@ -84,6 +84,18 @@ def _get_cell_value_safe(sheet, cell_ref):
         return None
 
 
+def _fallback_value_ok(vs, values_sheet, cell_ref, rate_cell, d4_value):
+    """For formulas the equivalence engine can't evaluate: does the cell's
+    calculated value equal D4 / rate? Without a values sheet we can't check,
+    so trust the references (the caller already verified them)."""
+    if values_sheet is None:
+        return True
+    rate_value = _get_cell_value_safe(vs, rate_cell)
+    if d4_value is None or not rate_value:
+        return False
+    return _values_match(_get_cell_value_safe(values_sheet, cell_ref), d4_value / rate_value)
+
+
 def grade_row21_usd_conversion_back_v2(sheet, values_sheet=None):
     """
     Currency Conversion V2 - Row 21 (C21-F21)
@@ -112,7 +124,6 @@ def grade_row21_usd_conversion_back_v2(sheet, values_sheet=None):
 
     usd_cell = "D4"
     rate_row = 19
-    budget_row = 20  # Row 20 contains the foreign budget (B4 * rate)
     row = 21
     cols = ["C", "D", "E", "F"]
 
@@ -120,13 +131,14 @@ def grade_row21_usd_conversion_back_v2(sheet, values_sheet=None):
     format_score = 0.0
     feedback = []
     
-    # Get D4 value for expected calculations
-    d4_value = _get_cell_value_safe(sheet, usd_cell)
+    # Calculated values (for the fallback check below) come from the values
+    # sheet when we have it — D4 and the rates may themselves be formulas.
+    vs = values_sheet if values_sheet is not None else sheet
+    d4_value = _get_cell_value_safe(vs, usd_cell)
 
     for col in cols:
         cell_ref = f"{col}{row}"
         source_rate_cell = f"{col}{rate_row}"
-        source_budget_cell = f"{col}{budget_row}"
 
         raw_formula = sheet[cell_ref].value
         expected_formula = f"=D4/{source_rate_cell}"
@@ -135,17 +147,23 @@ def grade_row21_usd_conversion_back_v2(sheet, values_sheet=None):
         # Formula check — the equivalence engine is the authority. It requires
         # D4 DIVIDED BY the rate, so it correctly rejects =D4*{rate} (multiply)
         # and =C20/{rate} (wrong numerator) while accepting algebraic variants
-        # like =D4*(1/{rate}).
+        # like =D4*(1/{rate}) or =ROUND(D4/{rate},2). Formulas the engine can't
+        # evaluate (cross-sheet refs, unsupported functions) fall back to
+        # "right references + right calculated value".
         # -----------------------------
         if not isinstance(raw_formula, str) or not raw_formula.startswith("="):
             feedback.append(("CC21_FORMULA_MISSING", {"cell": cell_ref, "expected": expected_formula}))
-        elif formulas_equivalent(raw_formula, expected_formula):
+        elif equivalent_or_rounded(raw_formula, expected_formula) or (
+            not can_evaluate(raw_formula)
+            and _formula_contains_refs(raw_formula, [usd_cell, source_rate_cell])
+            and _fallback_value_ok(vs, values_sheet, cell_ref, source_rate_cell, d4_value)
+        ):
             formula_score += 2.0
             feedback.append(("CC21_FORMULA_OK", {"cell": cell_ref, "found": raw_formula}))
         else:
             norm = _normalize_formula(raw_formula)
             has_division = "/" in raw_formula
-            has_d4 = "d4" in norm
+            has_d4 = re.search(r"(?<![a-z0-9])d4(?![0-9])", norm) is not None
             if has_division and has_d4:
                 # Divides D4 but by the wrong cell / a hardcoded rate — partial.
                 formula_score += 0.75

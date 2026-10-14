@@ -1,6 +1,6 @@
 {
   "name": "ma-grader-desktop",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "MA Grader — drag-and-drop autograder for MAT-144 spreadsheet assignments",
   "author": "Clayton Ragsdale",
   "license": "UNLICENSED",
@@ -57,6 +57,7 @@
       "allowToChangeInstallationDirectory": true,
       "artifactName": "MA-Grader-Setup-${version}.${ext}"
     },
+    "afterPack": "scripts/adhoc-sign.cjs",
     "directories": {
       "output": "release"
     }

@@ -76,11 +76,11 @@ git push
 
 ### 2. Tag a version and push the tag
 
-Pick the next version number. The app is currently **0.1.1**, so:
+Pick the next version number (match `"version"` in `desktop/package.json`), e.g.:
 
 ```bash
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.5
+git push origin v0.1.5
 ```
 
 > Tags must start with `v`. Next time bump it (`v0.1.2`, `v0.2.0`, …). If you
@@ -123,8 +123,11 @@ Two easy ways:
 warn again.
 
 **macOS (`.dmg`):** double-click, drag **MA Grader** into Applications, eject the
-disk image. First launch: **right-click the app → Open → Open** (bypasses the
-unsigned-app warning, just once).
+disk image. First launch: double-click the app — macOS says it can't verify the
+developer; click **Done**. Then open **System Settings → Privacy & Security**,
+scroll down, click **Open Anyway** next to MA Grader, and confirm. Needed just
+once. (The app is ad-hoc signed, not signed with an Apple Developer ID, so
+right-click → Open no longer skips the warning on current macOS.)
 
 ### Everyone uses their own API key
 

@@ -16,7 +16,11 @@ off — the formula pattern is identical on every row — and it gives clear,
 per-column feedback instead of a single opaque number.
 """
 
+import re
+
 from openpyxl import load_workbook
+
+from graders.ma2_credit_cards.compute_credit_card_payoff import compute_credit_card_payoff_months
 
 START_ROW = 25
 MAX_SCAN = 800  # safety cap
@@ -53,35 +57,62 @@ def _find_table_rows(ws_f):
     return list(range(START_ROW, last + 1)), last
 
 
-def _row_ok(col, r, B, C, D, E):
-    """Is the formula in `col` at row r the correct pattern?"""
+def _has(f, ref):
+    """True if normalized formula f references cell `ref` exactly (so "d25"
+    doesn't match inside "d250")."""
+    return re.search(rf"(?<![a-z0-9]){ref}(?![0-9])", f) is not None
+
+
+def _row_ok(col, r, f):
+    """Is formula f (normalized) in column `col` at row r the correct pattern?"""
     if col == "B":
         if r == START_ROW:
             # Start balance: references C14 (often wrapped in an IF(... , C14)).
-            return "c14" in B
-        return (f"d{r-1}" in B) and (f"e{r-1}" in B) and ("+" in B)
+            return _has(f, "c14")
+        return _has(f, f"d{r-1}") and _has(f, f"e{r-1}") and ("+" in f)
     if col == "C":
-        return ("min(" in C) and ("max(" in C) and (f"b{r}" in C) and ("c17" in C) and ("c18" in C)
+        return ("min(" in f) and ("max(" in f) and _has(f, f"b{r}") and _has(f, "c17") and _has(f, "c18")
     if col == "D":
-        return (f"b{r}" in D) and (f"c{r}" in D) and ("-" in D)
+        return _has(f, f"b{r}") and _has(f, f"c{r}") and ("-" in f)
     if col == "E":
         return (
-            (f"d{r}" in E) and ("c13" in E)
-            and (("c15" in E) or ("/12" in E)) and ("/" in E) and ("*" in E)
+            _has(f, f"d{r}") and _has(f, "c13")
+            and (_has(f, "c15") or re.search(r"/12(?![0-9])", f) is not None)
+            and ("/" in f) and ("*" in f)
         )
     return False
 
 
+def _expected_payoff_months(ws_v):
+    """Months to pay off, simulated from the student's own parameters
+    (C13 APR, C14 balance, C15 payments/yr, C17 min %, C18 fixed min).
+    None if they aren't all numbers."""
+    try:
+        apr = float(ws_v["C13"].value)
+        balance = float(ws_v["C14"].value)
+        per_year = int(ws_v["C15"].value)
+        pct = float(ws_v["C17"].value)
+        fixed = float(ws_v["C18"].value)
+    except (TypeError, ValueError):
+        return None
+    if balance <= 0 or per_year <= 0 or (pct <= 0 and fixed <= 0):
+        return None
+    apr_pct = apr if apr > 1 else apr * 100   # accept 0.2 or 20
+    pct = pct / 100 if pct > 1 else pct
+    months = compute_credit_card_payoff_months(balance, pct, fixed, apr_pct, per_year)
+    return months if months < 600 else None   # never pays off within the cap
+
+
 def _detect_payoff(ws_v, rows):
     """Payoff row = first row where the Balance After Payment (D) reaches ~0 with
-    a positive starting balance. Falls back to the last row."""
+    a positive starting balance. None if the table never pays off."""
     for r in rows:
         b = ws_v[f"B{r}"].value
         d = ws_v[f"D{r}"].value
         if isinstance(b, (int, float)) and isinstance(d, (int, float)):
             if b > 0.005 and abs(d) <= 0.05:
                 return r
-    return rows[-1] if rows else START_ROW
+    return None
 
 
 def grade_credit_card_amortization(student_file_path):
@@ -100,25 +131,33 @@ def grade_credit_card_amortization(student_file_path):
     ws_v = wb_v["Credit Cards"]
 
     rows, last = _find_table_rows(ws_f)
+
+    # The table must run down to the payoff month. If it never reaches a zero
+    # balance, score each column over the rows it SHOULD have (simulated from
+    # the student's parameters), so a table cut short can't earn full marks.
+    payoff_row = _detect_payoff(ws_v, rows)
+    expected_months = _expected_payoff_months(ws_v)
+    comments = []
     n = len(rows)
+    if payoff_row is None and expected_months and expected_months > n:
+        n = expected_months
+        comments.append(
+            f"The table stops at row {last} (month {len(rows)}) before the balance "
+            f"reaches 0 — it should run to month {expected_months} "
+            f"(row {START_ROW + expected_months - 1}). Missing rows count as incorrect."
+        )
 
     correct = {c: 0 for c in "BCDE"}
     bad = {c: [] for c in "BCDE"}
 
     for r in rows:
-        B = _norm(ws_f[f"B{r}"].value)
-        C = _norm(ws_f[f"C{r}"].value)
-        D = _norm(ws_f[f"D{r}"].value)
-        E = _norm(ws_f[f"E{r}"].value)
-        vals = {"B": B, "C": C, "D": D, "E": E}
         for col in "BCDE":
-            if _row_ok(col, r, B, C, D, E):
+            if _row_ok(col, r, _norm(ws_f[f"{col}{r}"].value)):
                 correct[col] += 1
             else:
                 bad[col].append(f"{col}{r}")
 
     column_points = {}
-    comments = []
     total = 0.0
     for col in "BCDE":
         pts = round(6.0 * correct[col] / n, 2) if n else 0.0
@@ -128,6 +167,8 @@ def grade_credit_card_amortization(student_file_path):
             comments.append(f"{COL_LABELS[col]} column ({col}): all {n} rows correct — {pts}/6.")
         else:
             sample = ", ".join(bad[col][:4]) + (" …" if len(bad[col]) > 4 else "")
+            if not sample:
+                sample = "rows missing past the end of the table"
             comments.append(
                 f"{COL_LABELS[col]} column ({col}): {correct[col]}/{n} rows follow the "
                 f"correct formula — {pts}/6. First issues: {sample}."
@@ -135,9 +176,16 @@ def grade_credit_card_amortization(student_file_path):
 
     total = round(total, 2)
 
-    payoff_row = _detect_payoff(ws_v, rows)
-    a_val = ws_v[f"A{payoff_row}"].value
-    payoff_month = int(a_val) if isinstance(a_val, (int, float)) else (payoff_row - START_ROW + 1)
+    if payoff_row is not None:
+        a_val = ws_v[f"A{payoff_row}"].value
+        payoff_month = int(a_val) if isinstance(a_val, (int, float)) else (payoff_row - START_ROW + 1)
+    elif expected_months:
+        # Never paid off: grade the summary against the true payoff month.
+        payoff_month = expected_months
+        payoff_row = START_ROW + expected_months - 1
+    else:
+        payoff_row = last
+        payoff_month = last - START_ROW + 1
 
     wb_f.close()
     wb_v.close()

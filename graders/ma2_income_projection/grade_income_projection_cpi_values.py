@@ -55,6 +55,7 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         # the row for manual review instead of marking it wrong.
         correct_cpi = 0
         checkable = 0
+        missing_rows = 0  # blank/unreadable rows count against the student
         unavailable = []
         for r in range(start_row, end_row + 1):
             year = dv[f"B{r}"].value
@@ -63,6 +64,7 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
 
             if not (year and month_num and cpi_value):
                 result["details"].append(f"Row {r}: missing data.")
+                missing_rows += 1
                 continue
 
             try:
@@ -72,6 +74,7 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
                 student_cpi = float(cpi_value)
             except (TypeError, ValueError):
                 result["details"].append(f"Row {r}: could not read year/month/CPI.")
+                missing_rows += 1
                 continue
 
             try:
@@ -94,10 +97,12 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
                     f"Row {r}: CPI mismatch (expected {expected_cpi:.3f}, got {student_cpi:.3f})."
                 )
 
-        # Score over the rows we could check (unavailable rows don't count against
-        # the student). If none were checkable, give the benefit of the doubt.
-        if checkable > 0:
-            cpi_points = round((correct_cpi / checkable) * 2, 2)
+        # Score over every row except those whose reference CPI is unavailable
+        # (blank/unreadable rows count as wrong). Benefit of the doubt only when
+        # every row was filled in but none could be checked against our data.
+        graded_rows = checkable + missing_rows
+        if graded_rows > 0:
+            cpi_points = round((correct_cpi / graded_rows) * 2, 2)
         else:
             cpi_points = 2.0
 

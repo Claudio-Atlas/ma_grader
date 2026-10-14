@@ -113,6 +113,7 @@ def phase1_grade_all_students_ma2(
                     pass
 
         student_wb = None
+        student_wb_data = None
         grading_wb = None
 
         try:
@@ -213,6 +214,8 @@ def phase1_grade_all_students_ma2(
             # Ensure workbooks are always closed
             if student_wb is not None:
                 student_wb.close()
+            if student_wb_data is not None:
+                student_wb_data.close()
             if grading_wb is not None:
                 grading_wb.close()
 

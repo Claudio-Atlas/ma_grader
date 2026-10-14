@@ -23,7 +23,7 @@ import re
 from typing import Tuple, List, Dict, Any
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.worksheet.formula import ArrayFormula
-from utilities.formula_equiv import formulas_equivalent
+from utilities.formula_equiv import can_evaluate, equivalent_or_rounded
 
 
 def _has_required_refs(formula: str) -> bool:
@@ -205,8 +205,13 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
         # Check 4: Is it MATHEMATICALLY the prediction slope*years+intercept?
         # This is what rejects the wrong all-addition form =B30+D{row}+B31, which
         # references the right cells but doesn't multiply. The equivalence engine
-        # accepts operand-order variants (=D{row}*B30+B31, =B31+B30*D{row}).
-        is_math_correct = formulas_equivalent(formula, f"=B30*D{row}+B31")
+        # accepts operand-order variants (=D{row}*B30+B31, =B31+B30*D{row}) and
+        # a ROUND(...) wrapper.
+        is_math_correct = equivalent_or_rounded(formula, f"=B30*D{row}+B31")
+        if not is_math_correct and has_slope_intercept and has_years and not can_evaluate(formula):
+            # The engine can't evaluate this formula (cross-sheet ref, unsupported
+            # function), so it can't prove it wrong — fall back to the reference check.
+            is_math_correct = True
 
         # Categorize the result
         if is_math_correct:
