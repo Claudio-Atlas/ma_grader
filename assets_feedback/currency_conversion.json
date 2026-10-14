@@ -47,5 +47,7 @@
   "CC21_FORMAT_OK": "[ok] {cell}: formatted as currency with 2 decimals.",
   "CC21_FORMAT_BAD": "[x] {cell}: should be currency with 2 decimals.",
   "CC21_FORMULA_PARTIAL": "[~] {cell}: divides D4 but not by the correct rate cell — expected {expected}, found {found}.",
+  "CC17_DATE_YEAR_TYPO": "[ok] {cell}: {date} accepted — the year looks like a typo for {year}.",
+  "CC17_DATE_OUT_OF_RANGE": "[x] {cell}: {date} isn't a plausible lookup date (it must be on or before the day the file was saved, {saved}, and within {max_age} days of it).",
   "CC17_DATE_INCONSISTENT": "[x] {cell}: {date} is {off_by} days from the other dates (should be within {max_days} days — all rates should be looked up around the same time)."
 }

@@ -210,3 +210,31 @@ def equivalent_or_rounded(student, canonical, max_digits=4):
     body = canonical[1:] if canonical.startswith("=") else canonical
     variants = [canonical] + [f"=ROUND({body},{k})" for k in range(max_digits + 1)]
     return equivalent_to_any(student, variants)
+
+
+def cell_number(ws, ws_values, ref, _depth=0):
+    """Numeric value of cell `ref`, or None.
+
+    Uses the cached value from `ws_values` (data_only) when there is one. Files
+    that were never recalculated in Excel have no cached values, so otherwise
+    fall back to the formulas sheet: a typed number is used as-is, and a simple
+    formula (e.g. =B30+1) is evaluated by resolving the cells it references."""
+    if ws_values is not None:
+        v = ws_values[ref].value
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+    v = ws[ref].value
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return float(v)
+    if not isinstance(v, str) or not v.startswith("=") or _depth > 50:
+        return None
+    try:
+        values = {}
+        for r in _refs(_normalize(v)):
+            n = cell_number(ws, ws_values, r, _depth + 1)
+            if n is None:
+                return None
+            values[r] = n
+        return float(_evaluate(v, values))
+    except Exception:
+        return None

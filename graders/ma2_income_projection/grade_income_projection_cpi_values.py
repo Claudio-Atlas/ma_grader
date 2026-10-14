@@ -1,4 +1,5 @@
 from graders.ma2_income_projection.load_cpi_data import get_cpi_value
+from utilities.formula_equiv import cell_number
 
 
 def grade_income_projection_cpi_values(ws, ws_data=None):
@@ -9,14 +10,18 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
     ws_data (optional): the same sheet loaded data_only=True. The tab is graded
     formulas-only, so a year entered as a formula (e.g. =B30+1) would otherwise
     read as the string "=B30+1"; reading the calculated values here lets those
-    "=previous+1" year formulas grade correctly.
+    "=previous+1" year formulas grade correctly. Cells without a cached value
+    (file never recalculated in Excel) fall back to the formulas sheet.
     """
     start_row = 30
     end_row = 37
     rows_count = end_row - start_row + 1
 
-    # Prefer calculated values (handles =previous+1 style formulas for the years).
-    dv = ws_data if ws_data is not None else ws
+    def num(ref):
+        return cell_number(ws, ws_data, ref)
+
+    def as_int(x):
+        return int(round(x)) if x is not None else None
 
     result = {"points": 0, "comment": "", "details": []}
 
@@ -27,8 +32,8 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         }
 
         # ----------------------- 1) Month numbers -----------------------
-        base_month = dv[f"A{start_row}"].value
-        all_months = [dv[f"A{r}"].value for r in range(start_row, end_row + 1)]
+        base_month = as_int(num(f"A{start_row}"))
+        all_months = [as_int(num(f"A{r}")) for r in range(start_row, end_row + 1)]
         if all(m == base_month for m in all_months if m is not None):
             month_points = 2
             result["details"].append(f"All month numbers match ({base_month}).")
@@ -37,10 +42,10 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
             result["details"].append("Month numbers in column A are not consistent.")
 
         # ----------------------- 2) Year increment ----------------------
-        base_year = int(dv[f"B{start_row}"].value)
-        expected_years = [base_year + i for i in range(rows_count)]
-        actual_years = [int(dv[f"B{r}"].value) for r in range(start_row, end_row + 1)]
-        if actual_years == expected_years:
+        base_year = as_int(num(f"B{start_row}"))
+        actual_years = [as_int(num(f"B{r}")) for r in range(start_row, end_row + 1)]
+        expected_years = [base_year + i for i in range(rows_count)] if base_year is not None else None
+        if expected_years is not None and actual_years == expected_years:
             year_points = 2
             result["details"].append("Years increment correctly from the starting year.")
         else:
@@ -58,9 +63,20 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         missing_rows = 0  # blank/unreadable rows count against the student
         unavailable = []
         for r in range(start_row, end_row + 1):
-            year = dv[f"B{r}"].value
-            month_num = dv[f"A{r}"].value
-            cpi_value = dv[f"C{r}"].value
+            year = as_int(num(f"B{r}"))
+            month_num = as_int(num(f"A{r}"))
+            cpi_value = num(f"C{r}")
+
+            raw_cpi = ws[f"C{r}"].value
+            if cpi_value is None and year and month_num and isinstance(raw_cpi, str) and raw_cpi.startswith("="):
+                # A lookup formula (VLOOKUP/INDEX...) with no cached value — we
+                # can't compute it here, so flag it rather than mark it wrong.
+                unavailable.append(f"row {r} (no calculated value)")
+                result["details"].append(
+                    f"Row {r}: [MANUAL REVIEW] CPI formula has no saved value "
+                    f"(file not recalculated in Excel) — verify by hand."
+                )
+                continue
 
             if not (year and month_num and cpi_value):
                 result["details"].append(f"Row {r}: missing data.")
@@ -114,8 +130,8 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         )
         if unavailable:
             comment += (
-                f" | [MANUAL REVIEW] {len(unavailable)} recent month(s) not in the "
-                f"reference data ({', '.join(unavailable)}) — not counted against the student."
+                f" | [MANUAL REVIEW] {len(unavailable)} CPI value(s) couldn't be "
+                f"auto-checked ({', '.join(unavailable)}) — not counted against the student."
             )
         result["comment"] = comment
 
