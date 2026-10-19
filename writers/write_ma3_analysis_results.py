@@ -71,7 +71,11 @@ def write_ma3_analysis_results(ws_grading: Worksheet, results: dict) -> Workshee
         feedback_text = render_feedback(written_feedback, TAB)
         if len(written_text) > 500:
             written_text = written_text[:500] + "..."
-        ws_grading["G8"].value = f"[MANUAL GRADING REQUIRED]\n\nStudent's Response:\n{written_text}\n\n{feedback_text}"
+        model = results.get("written_model_answer", "")
+        model_block = f"\n\nExpected (with this student's numbers):\n{model}" if model else ""
+        ws_grading["G8"].value = (
+            f"[MANUAL GRADING REQUIRED]\n\nStudent's Response:\n{written_text}{model_block}\n\n{feedback_text}"
+        )
     else:
         ws_grading["G8"].value = render_feedback(written_feedback, TAB)
     ws_grading["G8"].font = BLACK_FONT

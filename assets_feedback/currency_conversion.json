@@ -37,6 +37,7 @@
   "CC20_SUMMARY": "Row 20: {formula}/{formula_possible} formulas, {formatting}/{formatting_possible} formatting -> {total}/{total_possible}.",
   "CC20_FORMULA_MISSING": "[x] {cell}: must contain a formula multiplying B4 and {rate_ref}.",
   "CC20_FORMULA_OK": "[ok] {cell}: correct multiplication formula.",
+  "CC20_FORMULA_TEXT": "[x] {cell}: this formula turns the answer into text ({found}), so Excel can't calculate with it. Keep it a number, =B4*{rate_ref}, and show the currency code with number formatting instead.",
   "CC20_FORMULA_BAD": "[x] {cell}: expected {expected_a} or {expected_b}.",
   "CC20_FORMAT_OK": "[ok] {cell}: formatted as currency with 2 decimals.",
   "CC20_FORMAT_BAD": "[x] {cell}: should be currency with 2 decimals (e.g., $0.00).",

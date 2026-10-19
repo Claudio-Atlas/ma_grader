@@ -34,25 +34,46 @@ def _is_placeholder_title(text: Optional[str]) -> bool:
     return False
 
 
-def _extract_title_text(title_obj) -> Optional[str]:
-    """Extract readable text from chart title object."""
+def _extract_title_text(title_obj, sheet: Optional[Worksheet] = None) -> Optional[str]:
+    """Readable text of a chart/axis title, or None.
+
+    Titles are either typed (rich text) or LINKED to a cell (=Visualization!$F$27).
+    A linked title's text comes from the chart's cached copy, or from the cell
+    itself. (Previously a linked title fell through to the object's debug string,
+    which never looked like a placeholder, so "Title of the Bin" got credit.)
+    """
     if title_obj is None:
         return None
-    
+    tx = getattr(title_obj, "tx", None)
     try:
-        if hasattr(title_obj, 'tx') and title_obj.tx:
-            if hasattr(title_obj.tx, 'rich') and title_obj.tx.rich:
-                texts = []
-                for p in title_obj.tx.rich.p:
-                    if hasattr(p, 'r'):
-                        for r in p.r:
-                            if hasattr(r, 't') and r.t:
-                                texts.append(r.t)
-                return ''.join(texts) if texts else None
+        # Linked to a cell? (Checked first: openpyxl also attaches an empty
+        # rich-text block to linked titles.)
+        ref = getattr(tx, "strRef", None) if tx is not None else None
+        if ref is not None:
+            cache = getattr(ref, "strCache", None)
+            pts = getattr(cache, "pt", None) if cache is not None else None
+            if pts:
+                text = "".join(str(pt.v) for pt in pts if getattr(pt, "v", None) is not None)
+                if text:
+                    return text
+            if sheet is not None and getattr(ref, "f", None):
+                cell = str(ref.f).split("!")[-1].replace("$", "")
+                value = sheet[cell].value
+                return str(value) if value not in (None, "") else None
+
+        if tx is not None and getattr(tx, "rich", None):
+            texts = []
+            for p in tx.rich.p:
+                for r in (getattr(p, "r", None) or []):
+                    if getattr(r, "t", None):
+                        texts.append(r.t)
+                for fld in (getattr(p, "fld", None) or []):
+                    if getattr(fld, "t", None):
+                        texts.append(fld.t)
+            return "".join(texts) if texts else None
     except Exception:
         pass
-    
-    return str(title_obj) if title_obj else None
+    return None
 
 
 def _cols_in_ref(ref) -> set:
@@ -176,7 +197,7 @@ def check_histogram(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         feedback.append(("HIST_GAP_WRONG", {"gap": gap_width if gap_width is not None else "not 0%"}))
 
     # ---- (5) Chart title present and not a placeholder — 0.5 ---------------
-    chart_title = _extract_title_text(bar_chart.title)
+    chart_title = _extract_title_text(bar_chart.title, sheet)
     if _is_placeholder_title(chart_title):
         if chart_title and chart_title.strip():
             feedback.append(("HIST_TITLE_PLACEHOLDER", {"title": chart_title}))
@@ -187,8 +208,8 @@ def check_histogram(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         feedback.append(("HIST_TITLE_OK", {"title": chart_title}))
 
     # ---- (6) X-axis (valid, not placeholder / not "Frequency") + Y-axis — 0.5 each
-    x_title = _extract_title_text(bar_chart.x_axis.title) if getattr(bar_chart, 'x_axis', None) else None
-    y_title = _extract_title_text(bar_chart.y_axis.title) if getattr(bar_chart, 'y_axis', None) else None
+    x_title = _extract_title_text(bar_chart.x_axis.title, sheet) if getattr(bar_chart, 'x_axis', None) else None
+    y_title = _extract_title_text(bar_chart.y_axis.title, sheet) if getattr(bar_chart, 'y_axis', None) else None
 
     if not x_title or not x_title.strip():
         feedback.append(("HIST_XAXIS_MISSING", {}))

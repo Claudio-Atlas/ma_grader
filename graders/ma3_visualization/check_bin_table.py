@@ -19,52 +19,32 @@ def _normalize_formula(formula: str) -> str:
     return formula.replace(" ", "").upper()
 
 
-def _check_min_formula(formula: str) -> bool:
-    """Check if formula uses MIN function on difference data."""
+# The difference data: column B on this tab (B12:B61, or the whole column), the
+# same values on the Analysis tab (Analysis!D14:D63), or B14:B63 (a reference
+# copied over from the Analysis tab's row numbers; accepted historically).
+_DATA_RE = r"(?:'?ANALYSIS'?!)?D(?:14:D63|:D)|B(?:12:B61|:B|14:B63)"
+_NUM = r"\d+(?:\.\d+)?"
+
+
+def _check_extreme_formula(formula: str, func: str, buffer_sign: str) -> bool:
+    """=MIN(data) / =MAX(data), optionally with a small buffer that widens the
+    range (MIN(...)-0.1, MAX(...)+0.1) so the end values land inside a bin."""
     if not formula or not formula.startswith("="):
         return False
-    
-    normalized = _normalize_formula(formula)
-    
-    # Must use MIN function
-    if "MIN(" not in normalized:
-        return False
-    
-    # Should reference the difference data column (B in Visualization)
-    # Valid patterns:
-    #   - B12:B61, $B$12:$B$61 (explicit range)
-    #   - B:B, $B:$B (entire column reference - valid approach)
-    #   - B14:B63 (if they copied from Analysis sheet reference)
-    if "B:B" in normalized or "$B:$B" in normalized:
-        return True
-    if "B" in normalized and ("12" in normalized or "14" in normalized):
-        return True
-    
-    return False
+    f = _normalize_formula(formula).replace("$", "")
+    pattern = rf"={func}\((?:{_DATA_RE})\)(?:\{buffer_sign}{_NUM})?"
+    return re.fullmatch(pattern, f) is not None
+
+
+def _check_min_formula(formula: str) -> bool:
+    """Bin min: MIN of the difference data, e.g. =MIN(B12:B61) or
+    =MIN(Analysis!D14:D63)-0.1."""
+    return _check_extreme_formula(formula, "MIN", "-")
 
 
 def _check_max_formula(formula: str) -> bool:
-    """Check if formula uses MAX function on difference data."""
-    if not formula or not formula.startswith("="):
-        return False
-    
-    normalized = _normalize_formula(formula)
-    
-    # Must use MAX function
-    if "MAX(" not in normalized:
-        return False
-    
-    # Should reference the difference data column (B in Visualization)
-    # Valid patterns:
-    #   - B12:B61, $B$12:$B$61 (explicit range)
-    #   - B:B, $B:$B (entire column reference - valid approach)
-    #   - B14:B63 (if they copied from Analysis sheet reference)
-    if "B:B" in normalized or "$B:$B" in normalized:
-        return True
-    if "B" in normalized and ("12" in normalized or "61" in normalized or "63" in normalized or "14" in normalized):
-        return True
-    
-    return False
+    """Bin max: MAX of the difference data, e.g. =MAX(B12:B61)+0.1."""
+    return _check_extreme_formula(formula, "MAX", "+")
 
 
 # The frequency table has 11 bins (rows 28-38), so the bin width is the data

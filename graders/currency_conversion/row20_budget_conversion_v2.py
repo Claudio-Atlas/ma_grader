@@ -2,6 +2,14 @@
 
 import re
 from ..currency_conversion.utils import norm_unit
+from utilities.formula_equiv import can_evaluate, equivalent_or_rounded
+
+
+def _makes_text(formula: str) -> bool:
+    """True if the formula builds text (e.g. ="MXN "&(C19*B4) or TEXT(...)),
+    which displays the right digits but isn't a number Excel can calculate with."""
+    f = formula.upper()
+    return '"' in f or "&" in f or re.search(r"\b(TEXT|CONCAT|CONCATENATE|TEXTJOIN|DOLLAR|FIXED)\s*\(", f) is not None
 
 
 def _formula_contains_refs(formula: str, required_refs: list) -> bool:
@@ -98,16 +106,24 @@ def grade_row20_budget_conversion_v2(sheet, values_sheet=None, country_entries=N
         # -----------------------------
         if not isinstance(raw_formula, str) or not raw_formula.startswith("="):
             feedback.append(("CC20_FORMULA_MISSING", {"cell": target_cell, "rate_ref": rate_ref}))
+        elif _makes_text(raw_formula):
+            # Text that merely looks like the answer earns no credit.
+            feedback.append(("CC20_FORMULA_TEXT", {
+                "cell": target_cell, "rate_ref": rate_ref, "found": raw_formula,
+            }))
         else:
             f = norm_unit(raw_formula)  # existing normalizer (lowercases & strips)
 
-            # Method 1: Exact match (traditional)
-            valid_1 = f == f"=b4*{rate_ref.lower()}"
-            valid_2 = f == f"={rate_ref.lower()}*b4"
-            exact_match = valid_1 or valid_2
+            # Method 1: mathematically B4 x rate (any operand order, ROUND wrapper).
+            exact_match = equivalent_or_rounded(raw_formula, f"=B4*{rate_ref}")
             
             # Method 2: Check for required cell references (flexible)
-            has_required_refs = _formula_contains_refs(raw_formula, [budget_cell, rate_ref])
+            # Only used when the engine can't evaluate the formula itself;
+            # an evaluable formula that isn't B4 x rate is simply wrong.
+            has_required_refs = (
+                not can_evaluate(raw_formula)
+                and _formula_contains_refs(raw_formula, [budget_cell, rate_ref])
+            )
             
             # Method 3: Verify calculated value is correct (if values_sheet provided)
             value_correct = False

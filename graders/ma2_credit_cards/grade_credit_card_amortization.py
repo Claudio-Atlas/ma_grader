@@ -18,7 +18,7 @@ per-column feedback instead of a single opaque number.
 
 import re
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 from graders.ma2_credit_cards.compute_credit_card_payoff import compute_credit_card_payoff_months
 
@@ -83,16 +83,23 @@ def _row_ok(col, r, f):
     return False
 
 
-def _expected_payoff_months(ws_v):
+def _expected_payoff_months(ws_v, ws_f=None):
     """Months to pay off, simulated from the student's own parameters
     (C13 APR, C14 balance, C15 payments/yr, C17 min %, C18 fixed min).
     None if they aren't all numbers."""
+    def val(ref):
+        # Cached value, else the typed value (files never recalculated in Excel).
+        v = ws_v[ref].value
+        if not isinstance(v, (int, float)) and ws_f is not None:
+            v = ws_f[ref].value
+        return v
+
     try:
-        apr = float(ws_v["C13"].value)
-        balance = float(ws_v["C14"].value)
-        per_year = int(ws_v["C15"].value)
-        pct = float(ws_v["C17"].value)
-        fixed = float(ws_v["C18"].value)
+        apr = float(val("C13"))
+        balance = float(val("C14"))
+        per_year = int(val("C15"))
+        pct = float(val("C17"))
+        fixed = float(val("C18"))
     except (TypeError, ValueError):
         return None
     if balance <= 0 or per_year <= 0 or (pct <= 0 and fixed <= 0):
@@ -136,7 +143,7 @@ def grade_credit_card_amortization(student_file_path):
     # balance, score each column over the rows it SHOULD have (simulated from
     # the student's parameters), so a table cut short can't earn full marks.
     payoff_row = _detect_payoff(ws_v, rows)
-    expected_months = _expected_payoff_months(ws_v)
+    expected_months = _expected_payoff_months(ws_v, ws_f)
     comments = []
     n = len(rows)
     if payoff_row is None and expected_months and expected_months > n:

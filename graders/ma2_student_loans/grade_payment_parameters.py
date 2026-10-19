@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def grade_payment_parameters(student_file_path):
     """

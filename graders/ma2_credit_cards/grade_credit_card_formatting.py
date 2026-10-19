@@ -1,6 +1,6 @@
 # graders/credit_cards/grade_credit_card_formatting.py
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def _is_currency(fmt):
     """Currency format (two decimals)."""

@@ -64,7 +64,7 @@ def grade_income_analysis(ws: Worksheet) -> Dict[str, Any]:
             - scatterplot_feedback: List[Tuple[str, dict]]
     
     Example:
-        >>> from openpyxl import load_workbook
+        >>> from utilities.xl import load_workbook  # strips _xlfn. prefixes
         >>> wb = load_workbook("student_submission.xlsx")
         >>> ws = wb["Income Analysis"]
         >>> results = grade_income_analysis(ws)

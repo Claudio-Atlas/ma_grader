@@ -9,6 +9,7 @@ Author: Clayton Ragsdale
 
 import os
 from openpyxl import load_workbook
+from utilities.xl import load_workbook as load_student_workbook
 from typing import Dict, Any, Optional
 
 from utilities.logger import get_logger
@@ -113,7 +114,7 @@ def phase1_grade_all_students_ma3(
         
         try:
             logger.debug(f"  Loading submission: {submission_file}")
-            student_wb = load_workbook(submission_file, data_only=False)  # For formulas
+            student_wb = load_student_workbook(submission_file, data_only=False)  # For formulas
             student_wb_data = load_workbook(submission_file, data_only=True)  # For calculated values
             
             logger.debug(f"  Loading grading sheet: {grading_file}")

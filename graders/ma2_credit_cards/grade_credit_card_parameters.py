@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def extract_credit_card_values(ws_random):
     """

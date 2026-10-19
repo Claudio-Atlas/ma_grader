@@ -1,6 +1,6 @@
 # graders/annual_budget/grade_annual_budget_tab.py
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 from graders.ma2_annual_budget.grade_budget_housing_other import grade_budget_housing_other
 from graders.ma2_annual_budget.grade_budget_row26 import grade_budget_row26

@@ -101,60 +101,85 @@ def _check_title_formula(formula: str, row: int) -> bool:
     return False
 
 
-def _check_frequency_formula(formula: str) -> bool:
-    """
-    Check if frequency formula uses COUNTIF, COUNTIFS, or FREQUENCY.
-    
-    Accept various patterns:
-        =COUNTIFS(range, ">="&lower, range, "<="&upper)
-        =COUNTIF(range, ">="&D28) - COUNTIF(range, ">"&E28)
-        =FREQUENCY(data, bins)
+# The 50 difference values. Absolute and relative spellings are equivalent
+# once "$" is stripped, but a RELATIVE range dragged down the column shifts
+# (B12:B61 -> B13:B62), which no longer matches — exactly the mistake to catch.
+_DATA = r"(?:B12:B61|B:B|(?:'?ANALYSIS'?!)?D14:D63)"
+
+
+def _crit(limit: str, ops: str) -> str:
+    """A COUNTIF(S) criterion comparing against a limit cell/range, e.g.
+    ">="&D28 or "<"&E28:E38."""
+    return rf'"(?:{ops})"&{limit}(?![0-9])'
+
+
+def _check_frequency_formula(formula: str, row: int = None, spill: bool = False) -> bool:
+    """Is this a correct count of the data values in bin `row`?
+
+    Accepted (operators may be > or >= on the lower limit, < or <= on the upper):
+        =COUNTIFS(B12:B61,">="&D28, B12:B61,"<"&E28)
+        =COUNTIF(B12:B61,">="&D28) - COUNTIF(B12:B61,">"&E28)   (and the "<" form)
+        =SUMPRODUCT((B12:B61>=D28)*(B12:B61<E28))
+        =FREQUENCY(B12:B61, E28:E38)                             (spill)
+    The criteria must be comparisons: =COUNTIFS(B12:B61,D28:D38,B12:B61,E28:E38)
+    only counts values EQUAL to a limit, so it's wrong.
     """
     if not formula or not formula.startswith("="):
         return False
-    
-    normalized = _normalize_formula(formula)
-    
-    # Check for counting functions
-    if "COUNTIFS(" in normalized:
-        return True
-    
-    if "COUNTIF(" in normalized:
-        return True
-    
-    if "FREQUENCY(" in normalized:
-        return True
-    
-    # Also accept SUM with conditional logic
-    if "SUMPRODUCT(" in normalized:
-        return True
-    
+    f = _normalize_formula(formula).replace("$", "")
+
+    if spill:
+        lo, hi = r"D2[0-9]:D3[0-9]", r"E2[0-9]:E3[0-9]"
+    else:
+        lo, hi = f"D{row}", f"E{row}"
+
+    if "FREQUENCY(" in f:
+        return re.search(rf"FREQUENCY\({_DATA},E28:E3[78]\)", f) is not None
+
+    if "COUNTIFS(" in f:
+        has_data = len(re.findall(rf"COUNTIFS\({_DATA},|,{_DATA},", f)) >= 2
+        return has_data and re.search(_crit(lo, ">=|>"), f) is not None \
+            and re.search(_crit(hi, "<=|<"), f) is not None
+
+    if "COUNTIF(" in f:
+        parts = re.findall(rf"COUNTIF\({_DATA},([^)]*)\)", f)
+        if len(parts) != 2 or "-" not in f:
+            return False
+        joined = ",".join(parts)
+        above = re.search(_crit(lo, ">=|>"), joined) and re.search(_crit(hi, ">=|>"), joined)
+        below = re.search(_crit(lo, "<=|<"), joined) and re.search(_crit(hi, "<=|<"), joined)
+        return bool(above or below)
+
+    if "SUMPRODUCT(" in f:
+        return re.search(rf"{_DATA}(?:>=|>){lo}(?![0-9])", f) is not None \
+            and re.search(rf"{_DATA}(?:<=|<){hi}(?![0-9])", f) is not None
+
     return False
 
 
-def _check_relative_freq_formula(formula: str, row: int) -> bool:
-    """
-    Check if relative frequency formula divides by total.
+# Fixed totals a relative frequency may divide by.
+_TOTALS = (
+    r"SUM\(G28:G38\)", r"\(SUM\(G28:G38\)\)",
+    rf"COUNTA?\({_DATA}\)", rf"\(COUNTA?\({_DATA}\)\)",
+    r"50", r"\(50\)",
+)
 
-    Expected patterns:
-        =G{row}/50
-        =G{row}/SUM($G$28:$G$38)
-        =G{row}/SUM(G:G)
+
+def _check_relative_freq_formula(formula: str, row: int) -> bool:
+    """Relative frequency = this row's frequency / the fixed total.
+
+        =G28/SUM(G$28:G$38)   =G28/50   =G28/COUNT($B$12:$B$61)
+
+    The total must stay put on every row. A relative SUM/COUNT range dragged
+    down the column (=G29/SUM(G29:G39), =G29/COUNT(B14:B62)) divides by the
+    wrong total, so only the exact fixed range is accepted.
     """
     if not formula or not formula.startswith("="):
         return False
-
-    normalized = _normalize_formula(formula)
-
-    # Must reference the frequency cell for this row
-    if f"G{row}" not in normalized:
-        return False
-
-    # Must have division
-    if "/" not in normalized:
-        return False
-
-    return True
+    f = _normalize_formula(formula).replace("$", "")
+    f = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", f)  # allow a ROUND wrapper
+    m = re.fullmatch(rf"=\(?G{row}\)?/(.+)", f)
+    return m is not None and any(re.fullmatch(t, m.group(1)) for t in _TOTALS)
 
 
 def _formula_text(cell_value) -> str:
@@ -207,6 +232,11 @@ def _is_spill_frequency(anchor_value) -> bool:
     return False
 
 
+def _spill_frequency_ok(anchor_value) -> bool:
+    """A whole-column frequency formula must also count correctly."""
+    return _check_frequency_formula(_formula_text(anchor_value), spill=True)
+
+
 def _is_spill_relfreq(anchor_value) -> bool:
     """Detect a single relative-frequency formula (in H28) that fills the whole
     column: e.g. =G28:G38/50, =G28:G38/SUM(...), or an ArrayFormula."""
@@ -216,11 +246,22 @@ def _is_spill_relfreq(anchor_value) -> bool:
     normalized = _normalize_formula(text).replace("$", "")
     if "/" not in normalized:
         return False
-    if _spans_bin_rows(normalized, "G"):
+    # The NUMERATOR must be the frequency range (=G28:G38/..., =G28#/...);
+    # a per-row =G28/SUM(G28:G38) only has the range in its denominator.
+    if re.match(r"=(?:ROUND\()?\(?(?:G2[0-9]:G3[0-9]|G28#)", normalized):
         return True
     if type(anchor_value).__name__ == "ArrayFormula" and "G" in normalized:
         return True
     return False
+
+
+def _spill_relfreq_ok(anchor_value) -> bool:
+    """A whole-column relative frequency must divide by the fixed total,
+    e.g. =G28:G38/SUM(G28:G38) or =G28#/50."""
+    f = _normalize_formula(_formula_text(anchor_value)).replace("$", "")
+    f = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", f)
+    m = re.fullmatch(r"=\(?(?:G28:G3[78]|G28#)\)?/(.+)", f)
+    return m is not None and any(re.fullmatch(t, m.group(1)) for t in _TOTALS)
 
 
 def check_freq_dist_limits(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
@@ -313,10 +354,14 @@ def check_freq_dist_values(sheet: Worksheet, values_sheet: Worksheet = None) -> 
     freq_is_spill = _is_spill_frequency(sheet["G28"].value)
     relfreq_is_spill = _is_spill_relfreq(sheet["H28"].value)
 
-    if freq_is_spill:
+    if freq_is_spill and _spill_frequency_ok(sheet["G28"].value):
         correct_freq = total_rows
-    if relfreq_is_spill:
+    elif freq_is_spill:
+        feedback.append(("FREQ_COUNT_WRONG", {"cell": "G28"}))
+    if relfreq_is_spill and _spill_relfreq_ok(sheet["H28"].value):
         correct_relfreq = total_rows
+    elif relfreq_is_spill:
+        feedback.append(("FREQ_REL_WRONG", {"cell": "H28"}))
 
     for row in range(28, 39):
         # Check Title of Bin (F column)
@@ -342,12 +387,12 @@ def check_freq_dist_values(sheet: Worksheet, values_sheet: Worksheet = None) -> 
             if formula is None or str(formula).strip() == "":
                 feedback.append(("FREQ_COUNT_MISSING", {"cell": cell_ref}))
             elif not isinstance(formula, str) or not formula.startswith("="):
-                # Check if it's an ArrayFormula object
-                if hasattr(formula, '__class__') and 'ArrayFormula' in formula.__class__.__name__:
-                    correct_freq += 1  # Array formulas are acceptable
+                # A legacy array (CSE) formula: grade its text like any other.
+                if _check_frequency_formula(_formula_text(formula), row):
+                    correct_freq += 1
                 else:
                     feedback.append(("FREQ_COUNT_WRONG", {"cell": cell_ref}))
-            elif _check_frequency_formula(formula):
+            elif _check_frequency_formula(formula, row):
                 correct_freq += 1
             else:
                 feedback.append(("FREQ_COUNT_WRONG", {"cell": cell_ref}))

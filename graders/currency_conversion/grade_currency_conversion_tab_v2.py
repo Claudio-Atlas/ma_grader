@@ -72,7 +72,7 @@ def grade_currency_conversion_tab_v2(
             - formatting_total (sum of formatting scores + 1 bonus)
     
     Example:
-        >>> from openpyxl import load_workbook
+        >>> from utilities.xl import load_workbook  # strips _xlfn. prefixes
         >>> wb = load_workbook("student_submission.xlsx")
         >>> ws = wb["Currency Conversion"]
         >>> results = grade_currency_conversion_tab_v2(ws, "John_Doe")

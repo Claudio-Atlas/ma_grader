@@ -1,6 +1,6 @@
 # graders/credit_card/extract_credit_card_values.py
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def extract_credit_card_values(student_file_path):
     """

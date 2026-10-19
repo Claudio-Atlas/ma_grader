@@ -16,6 +16,8 @@ import re
 from typing import Tuple, List, Union
 from openpyxl.worksheet.worksheet import Worksheet
 
+from utilities.formula_equiv import formulas_equivalent
+
 
 # Credit multipliers (of the 3 points per bound cell)
 CREDIT_FULL = 1.0            # 3/3 — mean & stdev both of the differences
@@ -61,6 +63,17 @@ def _bound_credit(formula: str, is_lower: bool) -> float:
         return CREDIT_NONE
 
     body = _normalize_formula(formula).replace("$", "")[1:]  # drop '=' and $
+
+    # Full credit whenever it's mathematically mean(diff) -/+ stdev(diff), e.g.
+    # =I18-1*(I20), =-I20+I18, =AVERAGE(D14:D63)-STDEV.S(D14:D63). The function
+    # forms are swapped for the cells that hold the same statistic so the
+    # equivalence engine (arithmetic only) can evaluate them.
+    sub = _STDEV_DIFF_RE.sub("I20", body)
+    sub = sub.replace("AVERAGE(D14:D63)", "I18").replace("(H18-G18)", "(I18)")
+    if sub.startswith("H18-G18"):
+        sub = "I18" + sub[len("H18-G18"):]
+    if formulas_equivalent("=" + sub, "=I18-I20" if is_lower else "=I18+I20"):
+        return CREDIT_FULL
 
     # --- stdev term ---
     m_stdev = _STDEV_DIFF_RE.search(body)

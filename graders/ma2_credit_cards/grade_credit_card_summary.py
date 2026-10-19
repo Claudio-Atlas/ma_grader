@@ -1,6 +1,6 @@
 import re
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def _norm(f):
     """Normalize Excel formulas for easier checking."""
@@ -20,6 +20,21 @@ def _sum_reaches(f, col, excel_row):
     return m is not None and int(m.group(1)) >= excel_row
 
 
+def _typed_value(formula, label, cell, fix):
+    """The rubric requires Excel functions with cell references, so a typed
+    number (or a formula with no cell reference, like =194/12) earns nothing
+    even when its value happens to be right. Returns the 0-point result, or
+    None when the cell does hold a formula with a reference."""
+    f = _norm(formula)
+    if f.startswith("=") and re.search(r"[a-z]{1,3}\d+", f):
+        return None
+    what = "is empty" if formula in (None, "") else "is a typed number instead of a formula"
+    return {
+        "points": 0,
+        "comment": f"Your {label} ({cell}) {what}. Use a formula that points at your table: {fix}",
+    }
+
+
 def _check_j25_years(ws_formulas, payoff_month, excel_row, value_ok=False):
     """
     J25 = number of years to pay off.
@@ -30,13 +45,16 @@ def _check_j25_years(ws_formulas, payoff_month, excel_row, value_ok=False):
     """
     formula = ws_formulas["J25"].value
     f = _norm(formula)
+    typed = _typed_value(formula, "years to pay off", "J25", f"=A{excel_row}/12.")
+    if typed:
+        return typed
 
     # Years to pay off = (payoff month) / 12. The month may come from any month
     # cell in column A (the student references their own payoff row) or be typed,
     # and payments-per-year may be the literal 12 or a reference to C15.
     # The fallback only applies when the value couldn't be confirmed, so it must
     # point at the payoff row (=A{payoff row}/12) or type the payoff month.
-    if value_ok or re.fullmatch(rf"=(a{excel_row}|{payoff_month})/(12|c15)", f):
+    if value_ok or re.fullmatch(rf"=a{excel_row}/(12|c15)", f):
         return {
             "points": 3,
             "comment": "J25 correctly calculates years to pay off (months ÷ 12 or ÷ C15).",
@@ -59,6 +77,9 @@ def _check_j26_total_paid(ws_formulas, excel_row, value_ok=False):
     """
     formula = ws_formulas["J26"].value
     f = _norm(formula)
+    typed = _typed_value(formula, "total amount paid", "J26", f"=SUM(C25:C{excel_row}).")
+    if typed:
+        return typed
 
     # Total paid = SUM of the Payment column from row 25 down to at least the
     # payoff row (rows past payoff are 0, so a longer range is fine; a shorter
@@ -87,6 +108,9 @@ def _check_j27_interest(ws_formulas, excel_row, value_ok=False):
     """
     formula = ws_formulas["J27"].value
     f = _norm(formula)
+    typed = _typed_value(formula, "total interest paid", "J27", "=J26-B25.")
+    if typed:
+        return typed
 
     # Total interest = total paid (J26) minus the original balance (referenced as
     # B25 or C14), OR the SUM of the monthly-interest column E down to any end row.

@@ -37,13 +37,18 @@ def _find_written_response(sheet: Worksheet) -> str:
                 
                 # Skip instruction text (starts with numbers or contains "5b")
                 if text and not text[0].isdigit():
-                    # Skip known labels
+                    # Skip the sheet's own short labels. Only short text (or text
+                    # that STARTS with a label) counts: a real answer is expected
+                    # to mention "68%" and the bounds, so a plain substring test
+                    # threw away exactly the answers we're looking for.
                     skip_labels = [
                         "lower bound", "upper bound", "68%", "answer:",
                         "legend", "if a cell", "you should"
                     ]
-                    
-                    is_label = any(label in text.lower() for label in skip_labels)
+                    low = text.lower()
+                    is_label = any(low.startswith(label) for label in skip_labels) or (
+                        len(text) < 60 and any(label in low for label in skip_labels)
+                    )
                     
                     if not is_label and len(text) > 50:
                         # This looks like the student's written response
@@ -60,6 +65,21 @@ def _find_written_response(sheet: Worksheet) -> str:
                 found_text = text
     
     return found_text
+
+
+def model_answer(values_sheet) -> str:
+    """The expected sentence, using this student's own empirical-rule bounds
+    (G36/G37), so the instructor can compare at a glance."""
+    if values_sheet is None:
+        return ""
+    lo, hi = values_sheet["G36"].value, values_sheet["G37"].value
+    if not isinstance(lo, (int, float)) or not isinstance(hi, (int, float)):
+        return ""
+    direction = "an increase" if lo > 0 or (lo + hi) / 2 > 0 else "a change"
+    return (
+        "According to the empirical rule, approximately 68% of the students should "
+        f"expect to see {direction} in their scores between {lo:.2f} and {hi:.2f} points."
+    )
 
 
 def check_written_analysis(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]], str]:

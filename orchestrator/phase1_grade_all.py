@@ -2,6 +2,7 @@
 
 import os
 from openpyxl import load_workbook
+from utilities.xl import load_workbook as load_student_workbook
 from typing import Dict, Any, Optional
 
 from utilities.logger import get_logger
@@ -90,7 +91,7 @@ def phase1_grade_all_students(
         
         try:
             logger.debug(f"  Loading submission: {submission_file}")
-            student_wb = load_workbook(submission_file, data_only=False)
+            student_wb = load_student_workbook(submission_file, data_only=False)
             
             logger.debug(f"  Loading grading sheet: {grading_file}")
             grading_wb = load_workbook(grading_file)

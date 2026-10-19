@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 from graders.ma2_student_loans.grade_mortgage_rate_lookup import grade_mortgage_rate_lookup
 from graders.ma2_student_loans.grade_payment_parameters import grade_payment_parameters

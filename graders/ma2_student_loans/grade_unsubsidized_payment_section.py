@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 def normalize_formula(formula: str) -> str:
     """Normalize Excel formula string for consistent comparison."""

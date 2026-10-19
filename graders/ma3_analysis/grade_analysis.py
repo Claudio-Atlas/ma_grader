@@ -25,7 +25,7 @@ from .check_differences import check_differences
 from .check_statistics import check_statistics
 from .check_percentiles import check_percentiles
 from .check_empirical_rule import check_empirical_rule
-from .check_written_analysis import check_written_analysis
+from .check_written_analysis import check_written_analysis, model_answer
 from .check_formatting import check_analysis_formatting
 
 
@@ -99,6 +99,7 @@ def grade_analysis_tab(
     results["written_score"] = written_score
     results["written_feedback"] = written_feedback
     results["written_text"] = written_text
+    results["written_model_answer"] = model_answer(sheet_data)
     
     # ============================================================
     # Formatting - 6 points

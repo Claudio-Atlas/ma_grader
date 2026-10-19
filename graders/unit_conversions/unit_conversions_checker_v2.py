@@ -75,7 +75,7 @@ def grade_unit_conversions_tab_v2(sheet: Worksheet) -> Dict[str, Any]:
             - Feedback lists for each category (unit_text_feedback, etc.)
     
     Example:
-        >>> from openpyxl import load_workbook
+        >>> from utilities.xl import load_workbook  # strips _xlfn. prefixes
         >>> wb = load_workbook("student_submission.xlsx")
         >>> ws = wb["Unit Conversions"]
         >>> results = grade_unit_conversions_tab_v2(ws)

@@ -2,6 +2,7 @@
 
 import os
 from openpyxl import load_workbook
+from utilities.xl import load_workbook as load_student_workbook
 
 from utilities.logger import get_logger
 
@@ -64,7 +65,7 @@ def grade_single_file(submission_path: str, graded_output_folder: str) -> dict:
     
     try:
         logger.debug(f"Loading submission: {submission_path}")
-        student_wb = load_workbook(submission_path, data_only=False)  # For formulas
+        student_wb = load_student_workbook(submission_path, data_only=False)  # For formulas
         student_wb_values = load_workbook(submission_path, data_only=True)  # For calculated values
         
         logger.debug(f"Loading grading sheet: {grading_path}")

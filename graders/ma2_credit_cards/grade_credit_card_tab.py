@@ -1,6 +1,6 @@
 # graders/credit_cards/grade_credit_cards_tab.py
 
-from openpyxl import load_workbook
+from utilities.xl import load_workbook  # strips _xlfn. prefixes
 
 # ---- Imports for each credit card sub-grader ----
 from graders.ma2_credit_cards.extract_credit_card_values import extract_credit_card_values
