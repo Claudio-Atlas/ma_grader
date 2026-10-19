@@ -4,6 +4,9 @@
 const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
+  // "darwin" | "win32" | "linux" — lets the UI pick platform-native styling.
+  platform: process.platform,
+  setTheme: (mode) => ipcRenderer.invoke("theme:set", mode),
   // Resolve the absolute path of a drag-and-dropped File (replaces the
   // removed File.path property in modern Electron).
   getPathForFile: (file) => {

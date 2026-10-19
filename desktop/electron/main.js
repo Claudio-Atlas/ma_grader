@@ -3,7 +3,7 @@
 // The renderer never touches Node, the filesystem, or child processes directly;
 // everything goes through the typed IPC channels below.
 
-import { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, nativeTheme } from "electron";
 import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
@@ -26,13 +26,26 @@ const isDev = process.env.NODE_ENV === "development";
 let mainWindow = null;
 
 function createWindow() {
+  const isMac = process.platform === "darwin";
   mainWindow = new BrowserWindow({
-    width: 1040,
+    width: 1080,
     height: 760,
     minWidth: 880,
     minHeight: 620,
-    backgroundColor: "#f6f7f9",
-    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
+    // macOS: translucent sidebar ("vibrancy") with the window buttons inset
+    // into it. Elsewhere: a solid window matching the light/dark theme.
+    ...(isMac
+      ? {
+          titleBarStyle: "hiddenInset",
+          trafficLightPosition: { x: 18, y: 18 },
+          vibrancy: "sidebar",
+          visualEffectState: "active",
+          backgroundColor: "#00000000",
+        }
+      : {
+          titleBarStyle: "default",
+          backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b0d10" : "#fbfbfa",
+        }),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -363,6 +376,13 @@ function recordRun(meta, result) {
   all.unshift(record); // most recent first
   writeHistory(all);
 }
+
+// Keep native window materials (macOS sidebar vibrancy, title bar) in step
+// with the in-app Appearance choice instead of only the OS setting.
+ipcMain.handle("theme:set", async (_evt, mode) => {
+  if (["system", "light", "dark"].includes(mode)) nativeTheme.themeSource = mode;
+  return { ok: true };
+});
 
 ipcMain.handle("history:list", async () => readHistory());
 ipcMain.handle("history:clear", async () => {

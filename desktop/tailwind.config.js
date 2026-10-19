@@ -7,6 +7,7 @@ export default {
         // Surfaces
         bg: "var(--bg)",
         "bg-elev": "var(--bg-elev)",
+        side: "var(--side)",
         surface: "var(--surface)",
         "surface-2": "var(--surface-2)",
         "surface-3": "var(--surface-3)",
@@ -19,7 +20,7 @@ export default {
         "ink-2": "var(--text-2)",
         "ink-3": "var(--text-3)",
         "ink-inv": "var(--text-inv)",
-        // Accent (Tron electric blue)
+        // Accent
         accent: "var(--accent)",
         "accent-2": "var(--accent-2)",
         "accent-press": "var(--accent-press)",
@@ -56,17 +57,20 @@ export default {
         ],
       },
       borderRadius: {
-        lg: "10px",
-        xl: "11px",
+        lg: "8px",
+        xl: "9px",
         "2xl": "14px",
       },
+      // The old neon "glow" names are kept so existing classes still work,
+      // but they now render as quiet depth instead of a glowing outline.
       boxShadow: {
         card: "var(--shadow)",
-        glow: "0 0 0 1px var(--accent), 0 0 22px -6px var(--glow)",
-        "glow-sm": "0 0 0 1px var(--accent), 0 0 14px -5px var(--glow)",
-        "glow-soft": "0 0 18px -6px var(--glow)",
-        focus: "0 0 0 1px var(--accent), 0 0 16px -6px var(--glow)",
-        "inset-accent": "inset 0 0 0 1px var(--accent-soft)",
+        raise: "var(--raise)",
+        glow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.15), 0 6px 16px -8px var(--glow)",
+        "glow-sm": "var(--raise)",
+        "glow-soft": "var(--shadow)",
+        focus: "0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft)",
+        "inset-accent": "none",
       },
     },
   },

@@ -84,6 +84,22 @@ export const Icon = {
       <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
     </svg>
   ),
+  Plus: (p) => (
+    <svg {...base} {...p}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  ),
+  Doc: (p) => (
+    <svg {...base} {...p}>
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v4h4M10 13h5M10 16h5" />
+    </svg>
+  ),
+  Mark: (p) => (
+    <svg {...base} strokeWidth={2.6} {...p}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  ),
   Monitor: (p) => (
     <svg {...base} {...p}>
       <rect x="3" y="4" width="18" height="12" rx="2" />

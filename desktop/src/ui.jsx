@@ -6,8 +6,9 @@ export function Card({ className = "", glow = false, children }) {
   return (
     <div
       className={
+        // Hairline + soft depth; `glow` is accepted for compatibility but no
+        // longer adds a halo.
         "bg-surface rounded-2xl border border-hair shadow-card " +
-        (glow ? "shadow-glow-soft " : "") +
         className
       }
     >
@@ -25,14 +26,13 @@ export function Button({
   type = "button",
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed select-none titlebar-no-drag";
+    "inline-flex items-center justify-center gap-2 rounded-[9px] px-4 py-2 text-[13.5px] font-medium transition-[background-color,color,box-shadow,transform,filter] duration-150 focus:outline-none focus-visible:shadow-focus disabled:opacity-40 disabled:cursor-not-allowed select-none titlebar-no-drag";
   const variants = {
-    // Primary = the Tron glow action.
     primary:
-      "bg-accent text-ink-inv hover:bg-accent-2 active:bg-accent-press active:scale-[0.99] shadow-glow",
-    soft: "bg-accent-soft text-accent hover:shadow-glow-sm",
-    subtle: "bg-surface-3 text-ink hover:bg-surface-2 border border-hair",
-    ghost: "bg-transparent text-ink-2 hover:bg-surface-3 hover:text-ink",
+      "bg-accent text-ink-inv font-semibold hover:brightness-[1.06] active:translate-y-px shadow-glow",
+    soft: "bg-accent-soft text-accent hover:bg-accent/15",
+    subtle: "bg-surface text-ink border border-hair shadow-raise hover:border-hair-strong",
+    ghost: "bg-transparent text-ink-2 hover:bg-ink/[0.05] hover:text-ink",
   };
   return (
     <button
@@ -48,7 +48,7 @@ export function Button({
 
 export function Segmented({ options, value, onChange }) {
   return (
-    <div className="inline-flex bg-surface-3 rounded-xl p-1 gap-1 titlebar-no-drag border border-hair">
+    <div className="inline-flex bg-surface-2 rounded-[9px] p-0.5 gap-0.5 titlebar-no-drag border border-hair">
       {options.map((opt) => {
         const active = opt.value === value;
         return (
@@ -56,10 +56,10 @@ export function Segmented({ options, value, onChange }) {
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={
-              "px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-150 " +
+              "px-3.5 py-[5px] text-[12.5px] font-medium rounded-[7px] transition-colors duration-150 " +
               (active
-                ? "bg-surface text-ink shadow-glow-sm"
-                : "text-ink-3 hover:text-ink-2")
+                ? "bg-surface text-ink shadow-raise"
+                : "text-ink-2 hover:text-ink")
             }
           >
             {opt.label}
@@ -82,11 +82,11 @@ export function Stat({ label, value, tone = "default" }) {
   return (
     <div className="flex flex-col">
       <span
-        className={`text-[2rem] leading-none font-medium tabular-nums ${tones[tone]}`}
+        className={`text-[1.75rem] leading-none font-semibold tracking-[-0.02em] tabular-nums ${tones[tone]}`}
       >
         {value}
       </span>
-      <span className="text-xs font-medium text-ink-3 mt-1.5 uppercase tracking-wide">
+      <span className="text-[12px] text-ink-3 mt-1.5">
         {label}
       </span>
     </div>
@@ -104,7 +104,7 @@ export function Badge({ children, tone = "default" }) {
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${tones[tone]}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-medium ${tones[tone]}`}
     >
       {children}
     </span>
@@ -112,7 +112,7 @@ export function Badge({ children, tone = "default" }) {
 }
 
 // A small status dot used in the sidebar / lists.
-export function Dot({ tone = "accent", glow = false }) {
+export function Dot({ tone = "accent" }) {
   const tones = {
     accent: "bg-accent",
     ok: "bg-success",
@@ -123,9 +123,7 @@ export function Dot({ tone = "accent", glow = false }) {
   };
   return (
     <span
-      className={`inline-block w-1.5 h-1.5 rounded-full ${tones[tone]} ${
-        glow ? "shadow-glow-soft" : ""
-      }`}
+      className={`inline-block w-1.5 h-1.5 rounded-full ${tones[tone]}`}
     />
   );
 }

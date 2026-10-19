@@ -1,8 +1,26 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Segmented, Stat, Badge, Dot } from "./ui.jsx";
 import { Icon } from "./icons.jsx";
 import Review from "./Review.jsx";
 import PaperGrade from "./PaperGrade.jsx";
+
+// ---- Browser-preview stand-in for the engine (never used inside Electron) ----
+const previewListeners = new Set();
+const PREVIEW_NAMES = ["Avery_Chen", "Jordan_Patel", "Sam_Okafor", "Riley_Brooks", "Morgan_Diaz", "Taylor_Nguyen", "Casey_Moreau", "Quinn_Alvarez"];
+async function previewRun() {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let i = 0; i < PREVIEW_NAMES.length; i++) {
+    previewListeners.forEach((fn) => fn({ type: "progress", current: i + 1, total: PREVIEW_NAMES.length, student: PREVIEW_NAMES[i] }));
+    await wait(700);
+  }
+  return {
+    success_count: PREVIEW_NAMES.length,
+    students: PREVIEW_NAMES.map((name) => ({ name, status: "graded", grade_file: `/demo/${name}_Grade.xlsx` })),
+    issues: [{ student: "Quinn_Alvarez", problem: "Missing the Annual Budget tab.", action: "Ask the student to resubmit with all tabs." }],
+    master_workbook: "/demo/INSTRUCTOR_MASTER.xlsx",
+    graded_path: "/demo",
+  };
+}
 
 // Fallback so the UI renders outside Electron (plain browser preview).
 const api =
@@ -10,20 +28,27 @@ const api =
     ? window.api
     : {
         getPathForFile: () => null,
-        pickZip: async () => null,
-        pickWorkbook: async () => null,
+        // Preview-only sample data so every screen can be seen in a browser.
+        pickZip: async () => "/Users/demo/Downloads/submissions.zip",
+        pickWorkbook: async () => "/Users/demo/Downloads/Late_Student_MA2.xlsx",
         pickPaper: async () => null,
         pickFolder: async () => null,
         openPath: async () => {},
         showItem: async () => {},
-        runGrading: async () => ({ students: [], issues: [] }),
-        runGradingOne: async () => ({ students: [], issues: [] }),
-        onGradeEvent: () => () => {},
+        runGrading: (opts) => previewRun(opts),
+        runGradingOne: (opts) => previewRun(opts),
+        onGradeEvent: (fn) => {
+          previewListeners.add(fn);
+          return () => previewListeners.delete(fn);
+        },
         keySave: async () => ({ ok: true }),
         keyStatus: async () => ({ hasKey: false }),
         keyClear: async () => ({ ok: true }),
         keyTest: async () => ({ ok: false, error: "unavailable" }),
-        historyList: async () => [],
+        historyList: async () => [
+          { id: "1", date: "2026-10-12T15:00:00Z", course: "MAT 144 · Section 01", assignment: "MA2", mode: "class", success_count: 31, issue_count: 3, students: [], issues: [] },
+          { id: "2", date: "2026-09-21T15:00:00Z", course: "MAT 144 · Section 01", assignment: "MA1", mode: "class", success_count: 32, issue_count: 0, students: [], issues: [] },
+        ],
         historyClear: async () => ({ ok: true }),
         getLibrary: async () => ({ folder: "~/MA_Grader_Output" }),
         setLibrary: async () => ({ folder: "~/MA_Grader_Output" }),
@@ -45,6 +70,10 @@ function applyTheme(mode) {
   const root = document.documentElement;
   if (mode === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", mode);
+  // Native window materials follow too (no-op outside Electron).
+  try {
+    window.api?.setTheme?.(mode);
+  } catch {}
 }
 function loadTheme() {
   try {
@@ -131,7 +160,8 @@ export default function App() {
     if (f && f.name.toLowerCase().endsWith(".zip")) {
       const full = (api.getPathForFile && api.getPathForFile(f)) || f.path || null;
       // Only accept a real absolute path; otherwise prompt to browse.
-      if (full && full.startsWith("/")) setZipPath(full);
+      // (macOS/Linux "/…", Windows "C:\\…" or "\\\\server\\…")
+      if (full && /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(full)) setZipPath(full);
       else pickZip();
     }
   }, []);
@@ -191,11 +221,18 @@ export default function App() {
   const stepLabel =
     phase === "running" ? "Running" : phase === "done" ? "Results" : phase === "error" ? "Error" : "New run";
 
+  // Each screen opens at the top (the scroll position used to carry over, so a
+  // screen could open scrolled past its content and look blank).
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [nav, phase, reviewStudent, paperStudent]);
+
   return (
-    <div className="h-full flex text-ink font-sans bg-bg">
+    <div className="h-full flex text-ink font-sans">
       <Sidebar nav={nav} setNav={setNav} theme={theme} cycleTheme={cycleTheme} />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="app-main flex-1 flex flex-col min-w-0 bg-bg">
         <TopBar crumb={navCrumb(nav, stepLabel)} course={course} />
 
         <main className="flex-1 flex flex-col min-h-0">
@@ -217,19 +254,21 @@ export default function App() {
               />
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-8 py-8">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto">
+              <div className="max-w-[720px] mx-auto px-10 pt-4 pb-12">
                 {nav === "run" && phase === "setup" && (
                   <SetupScreen
                     {...{
                       mode, setMode, zipPath, workbookPath, studentName, setStudentName,
                       paperPath, setPaperPath, course, setCourse, assignment, setAssignment,
                       outputFolder, dragging, setDragging, onDrop, pickZip, pickWorkbook,
-                      pickPaper, pickFolder, canRun, run,
+                      pickPaper, pickFolder, canRun, run, onOpenRun: openHistory,
                     }}
                   />
                 )}
-                {nav === "run" && phase === "running" && <RunningScreen progress={progress} />}
+                {nav === "run" && phase === "running" && (
+                  <RunningScreen progress={progress} assignment={assignment} course={course} />
+                )}
                 {nav === "run" && phase === "done" && (
                   <ResultsScreen
                     result={result}
@@ -278,65 +317,72 @@ function navCrumb(nav, stepLabel) {
 // Shell
 // ---------------------------------------------------------------------------
 function Sidebar({ nav, setNav, theme, cycleTheme }) {
-  const items = [
-    { id: "run", label: "New run", icon: Icon.Play },
-    { id: "library", label: "Library", icon: Icon.Folder },
-    { id: "manual", label: "Manual grade", icon: Icon.Pencil, badge: "MA2" },
-    { id: "history", label: "History", icon: Icon.Clock },
-    { id: "settings", label: "Settings", icon: Icon.Sliders },
+  const groups = [
+    [
+      { id: "run", label: "New run", icon: Icon.Plus },
+      { id: "library", label: "Library", icon: Icon.Folder },
+      { id: "history", label: "History", icon: Icon.Clock },
+    ],
+    [{ id: "manual", label: "Manual grade", icon: Icon.Pencil, badge: "MA2" }],
   ];
-  const themeIcon =
-    theme === "dark" ? Icon.Moon : theme === "light" ? Icon.Sun : Icon.Monitor;
-  const ThemeIcon = themeIcon;
+  const ThemeIcon = theme === "dark" ? Icon.Moon : theme === "light" ? Icon.Sun : Icon.Monitor;
+
+  const Item = ({ it }) => {
+    const ItIcon = it.icon;
+    const active = nav === it.id;
+    return (
+      <button
+        onClick={() => setNav(it.id)}
+        className={
+          "w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] transition-colors duration-100 " +
+          (active
+            ? "bg-accent-soft text-ink font-medium"
+            : "text-ink-2 hover:bg-ink/[0.04] hover:text-ink")
+        }
+      >
+        <ItIcon width={16} height={16} className={active ? "text-accent" : "text-ink-3"} />
+        <span className="flex-1 text-left">{it.label}</span>
+        {it.badge && (
+          <span className="text-[10.5px] font-medium px-1.5 py-px rounded-full bg-manual-soft text-manual">
+            {it.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
-    <aside className="w-60 shrink-0 bg-bg-elev border-r border-hair flex flex-col titlebar-drag">
-      <div className="h-14 flex items-center gap-2.5 px-5">
-        <div className="w-7 h-7 rounded-lg bg-accent text-ink-inv flex items-center justify-center shadow-glow-sm">
-          <Icon.Bolt width={15} height={15} />
+    <aside className="app-sidebar w-[232px] shrink-0 bg-side border-r border-hair flex flex-col titlebar-drag">
+      {/* Room for the macOS window buttons, which sit inside the sidebar. */}
+      <div className="h-[52px] shrink-0" />
+      <div className="flex items-center gap-2.5 px-4 pb-4">
+        <div className="w-[26px] h-[26px] rounded-[7px] bg-accent text-ink-inv flex items-center justify-center shadow-raise">
+          <Icon.Mark width={14} height={14} />
         </div>
-        <div className="leading-tight">
-          <div className="text-[13px] font-medium tracking-tight">MA Grader</div>
-          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-ink-3">
-            Autograder
-          </div>
-        </div>
+        <div className="text-[13.5px] font-semibold tracking-tight">MA Grader</div>
       </div>
 
-      <nav className="px-3 mt-3 space-y-0.5 titlebar-no-drag">
-        {items.map((it) => {
-          const ItIcon = it.icon;
-          const active = nav === it.id;
-          return (
-            <button
-              key={it.id}
-              onClick={() => setNav(it.id)}
-              className={
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 " +
-                (active
-                  ? "bg-accent-soft text-accent shadow-inset-accent"
-                  : "text-ink-2 hover:text-ink hover:bg-surface-3")
-              }
-            >
-              <ItIcon width={17} height={17} />
-              <span className="flex-1 text-left">{it.label}</span>
-              {it.badge && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-manual-soft text-manual">
-                  {it.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <nav className="px-2.5 titlebar-no-drag">
+        <div className="space-y-px">
+          {groups[0].map((it) => <Item key={it.id} it={it} />)}
+        </div>
+        <div className="text-[11px] font-medium text-ink-3 px-2.5 pt-4 pb-1.5">Review</div>
+        <div className="space-y-px">
+          {groups[1].map((it) => <Item key={it.id} it={it} />)}
+        </div>
       </nav>
 
-      <div className="mt-auto p-3 titlebar-no-drag">
+      <div className="mt-auto px-2.5 pb-3 titlebar-no-drag flex items-center gap-1">
+        <div className="flex-1">
+          <Item it={{ id: "settings", label: "Settings", icon: Icon.Sliders }} />
+        </div>
         <button
           onClick={cycleTheme}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-2 hover:text-ink bg-surface-3 hover:bg-surface-2 border border-hair transition-all"
+          title={`Appearance: ${theme} (click to change)`}
+          aria-label={`Appearance: ${theme}`}
+          className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-ink/[0.04] transition-colors"
         >
-          <ThemeIcon width={16} height={16} />
-          <span className="flex-1 text-left capitalize">{theme}</span>
-          <Dot tone="accent" glow />
+          <ThemeIcon width={15} height={15} />
         </button>
       </div>
     </aside>
@@ -346,17 +392,21 @@ function Sidebar({ nav, setNav, theme, cycleTheme }) {
 function TopBar({ crumb, course }) {
   const [main, sub] = crumb;
   return (
-    <header className="titlebar-drag h-14 shrink-0 flex items-center justify-between px-7 border-b border-hair bg-bg-elev/60 backdrop-blur">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="font-medium">{main}</span>
+    <header className="titlebar-drag h-[52px] shrink-0 flex items-center justify-between px-6">
+      <div className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
+        <span>{main}</span>
         {sub && (
           <>
-            <span className="text-ink-3">/</span>
-            <span className="font-mono text-ink-3 text-[13px]">{sub}</span>
+            <span className="text-ink-3/60">/</span>
+            <span className="text-ink-2">{sub}</span>
           </>
         )}
       </div>
-      <div className="font-mono text-[12px] text-ink-3">{course}</div>
+      {course && (
+        <div className="text-[12px] text-ink-2 px-2.5 py-1 rounded-full bg-surface-2 border border-hair">
+          {course}
+        </div>
+      )}
     </header>
   );
 }
@@ -364,26 +414,39 @@ function TopBar({ crumb, course }) {
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
+const ASSIGNMENT_INFO = {
+  MA1: "Currency & unit conversion, income analysis",
+  MA2: "Income projection, budget, credit cards, loans",
+  MA3: "Descriptive statistics & histogram",
+};
+
+const inputCls =
+  "titlebar-no-drag w-full rounded-[9px] bg-surface border border-hair px-3 py-2 text-[13.5px] text-ink placeholder:text-ink-3 focus:outline-none focus:shadow-focus focus:border-transparent transition-shadow";
+
 function SetupScreen(props) {
   const {
     mode, setMode, zipPath, workbookPath, studentName, setStudentName, paperPath,
     setPaperPath, course, setCourse, assignment, setAssignment, outputFolder,
     dragging, setDragging, onDrop, pickZip, pickWorkbook, pickPaper, pickFolder,
-    canRun, run,
+    canRun, run, onOpenRun,
   } = props;
 
   const single = mode === "single";
+  // Progressive: the details appear once there's something to grade.
+  const ready = single ? !!workbookPath : !!zipPath;
 
   return (
-    <div className="fade-up space-y-6">
+    <div className="space-y-6 fade-up">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">
-          {single ? "Grade one late submission" : "Grade a class in one drop"}
+        <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">
+          {ready ? "Ready to grade" : single ? "Grade one student" : "Grade a class"}
         </h1>
-        <p className="text-ink-2 text-sm mt-1.5">
-          {single
-            ? "Drop in a single student's workbook — it merges into the existing class."
-            : "Drop a submissions zip, pick the assignment, and the grader handles the rest."}
+        <p className="text-ink-2 text-[14.5px] mt-2 leading-relaxed">
+          {ready
+            ? "Check the details, then start. Nothing is written until you press Grade."
+            : single
+            ? "Choose a late or resubmitted workbook. It merges into the existing class."
+            : "Drop the submissions ZIP from Canvas. MA Grader grades every workbook and builds your master sheet."}
         </p>
       </div>
 
@@ -403,81 +466,172 @@ function SetupScreen(props) {
           setDragging={setDragging}
           dragging={dragging}
           selected={zipPath}
-          idleTitle="Drop submissions zip here"
-          selectedHint="Click to choose a different zip"
         />
       ) : (
-        <FilePick
+        <FileCard
           icon={Icon.File}
-          label="Student workbook"
           value={workbookPath}
           onPick={pickWorkbook}
           placeholder="Choose the student's .xlsx"
         />
       )}
 
-      <Card className="p-6 space-y-6">
-        {single && (
-          <Field label="Student name" hint="First and last — names the graded file">
-            <input
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="Jane Doe"
-              className="titlebar-no-drag w-full rounded-xl bg-surface-2 border border-hair px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:shadow-focus focus:border-accent transition-all"
-            />
+      {ready && (
+        <div className="space-y-7 fade-up">
+          <Field label="Assignment">
+            <div className="grid grid-cols-3 gap-2.5">
+              {ASSIGNMENTS.map((a) => {
+                const on = assignment === a.value;
+                return (
+                  <button
+                    key={a.value}
+                    onClick={() => setAssignment(a.value)}
+                    aria-pressed={on}
+                    className={
+                      "titlebar-no-drag text-left rounded-xl px-3.5 py-3 border transition-colors " +
+                      (on
+                        ? "bg-accent-soft border-accent"
+                        : "bg-surface border-hair hover:border-hair-strong")
+                    }
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-semibold">{a.label}</span>
+                      <span
+                        className={
+                          "w-4 h-4 rounded-full flex items-center justify-center " +
+                          (on ? "bg-accent text-ink-inv" : "border-[1.5px] border-hair-strong")
+                        }
+                      >
+                        {on && <Icon.Mark width={9} height={9} />}
+                      </span>
+                    </div>
+                    <div className="text-[12px] text-ink-2 mt-1.5 leading-snug">
+                      {ASSIGNMENT_INFO[a.value]}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </Field>
-        )}
 
-        <Field label="Course label" hint={single ? "Must match the class to merge in" : "Used to name the output folder"}>
-          <input
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-            placeholder="MAT 144 Online"
-            className="titlebar-no-drag w-full rounded-xl bg-surface-2 border border-hair px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:shadow-focus focus:border-accent transition-all"
-          />
-        </Field>
-
-        <Field label="Assignment">
-          <Segmented options={ASSIGNMENTS} value={assignment} onChange={setAssignment} />
-        </Field>
-
-        {single && assignment === "MA2" && (
-          <Field label="Write-up paper" hint="Stored for manual grading (optional)">
-            <FilePick
-              inline
-              icon={Icon.File}
-              value={paperPath}
-              onPick={pickPaper}
-              placeholder="Choose .docx or .pdf"
-              onClear={() => setPaperPath(null)}
-            />
-          </Field>
-        )}
-
-        <Field label="Output folder" hint="Optional — overrides your Library folder for this run">
-          <div className="flex items-center gap-3">
-            <Button variant="subtle" onClick={pickFolder}>
-              <Icon.Folder width={16} height={16} />
-              Choose folder…
-            </Button>
-            <span className="text-xs text-ink-3 truncate">
-              {outputFolder || "Defaults to your Library folder (Settings)"}
-            </span>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+            {single && (
+              <Field label="Student name" hint="Names the graded file">
+                <input
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="First Last"
+                  className={inputCls}
+                />
+              </Field>
+            )}
+            <Field label="Course" hint={single ? "Must match the class" : "Names the output folder"}>
+              <input
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+                placeholder="MAT 144 Online"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Save to" hint={outputFolder ? "This run only" : "Your Library folder"}>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={pickFolder}
+                  className={inputCls + " flex items-center gap-2 text-left hover:border-hair-strong"}
+                  title={outputFolder || "Choose a different folder for this run"}
+                >
+                  <Icon.Folder width={15} height={15} className="text-ink-3 shrink-0" />
+                  <span className="truncate font-mono text-[12.5px] text-ink-2">
+                    {outputFolder || "Library folder"}
+                  </span>
+                </button>
+              </div>
+            </Field>
+            {single && assignment === "MA2" && (
+              <Field label="Write-up paper" hint="Optional, for manual grading">
+                <FilePick
+                  inline
+                  icon={Icon.Doc}
+                  value={paperPath}
+                  onPick={pickPaper}
+                  placeholder=".docx or .pdf"
+                  onClear={() => setPaperPath(null)}
+                />
+              </Field>
+            )}
           </div>
-        </Field>
-      </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={run} disabled={!canRun} className="px-6 py-3">
-          {single ? "Grade student" : "Grade submissions"}
-          <Icon.ArrowRight width={17} height={17} />
-        </Button>
-      </div>
+          <div className="flex items-center justify-between pt-5 border-t border-hair">
+            <span className="text-[12.5px] text-ink-3">
+              {course.trim() ? `${assignment} · ${course.trim()}` : "Add a course name to continue"}
+            </span>
+            <Button onClick={run} disabled={!canRun} className="px-5">
+              {single ? "Grade student" : "Grade submissions"}
+              <Icon.ArrowRight width={16} height={16} />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!ready && !single && <RecentRuns onOpen={onOpenRun} />}
     </div>
   );
 }
 
-function DropArea({ onDrop, onClick, setDragging, dragging, selected, idleTitle, selectedHint }) {
+function RecentRuns({ onOpen }) {
+  const [runs, setRuns] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    api.historyList().then((r) => alive && setRuns((r || []).slice(0, 3)));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!runs || runs.length === 0) return null;
+  const when = (iso) => {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    } catch {
+      return "";
+    }
+  };
+  return (
+    <div className="pt-4">
+      <div className="text-[13px] font-semibold mb-2">Recent runs</div>
+      <ul className="border-t border-hair">
+        {runs.map((r) => (
+          <li key={r.id}>
+            <button
+              onClick={() => onOpen && onOpen(r)}
+              className="titlebar-no-drag w-full flex items-center justify-between gap-4 py-3 px-1 border-b border-hair text-left hover:bg-ink/[0.025] transition-colors"
+            >
+              <span>
+                <span className="block text-[13px] font-medium">
+                  {r.assignment} · {r.course}
+                </span>
+                <span className="block text-[12px] text-ink-3 mt-0.5">
+                  {when(r.date)} · {r.success_count} graded
+                </span>
+              </span>
+              {r.issue_count ? (
+                <Badge tone="warn">{r.issue_count} to check</Badge>
+              ) : (
+                <Badge tone="ok">Complete</Badge>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DropArea({ onDrop, onClick, setDragging, dragging, selected }) {
+  if (selected) {
+    return (
+      <FileCard icon={Icon.File} value={selected} onPick={onClick} placeholder="" onDrop={onDrop} setDragging={setDragging} />
+    );
+  }
   return (
     <div
       onDragOver={(e) => {
@@ -487,36 +641,53 @@ function DropArea({ onDrop, onClick, setDragging, dragging, selected, idleTitle,
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
       className={
-        "cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 px-6 py-12 text-center titlebar-no-drag " +
-        (dragging
-          ? "border-accent bg-accent-soft shadow-glow"
-          : selected
-          ? "border-accent/50 bg-accent-soft shadow-glow-soft"
-          : "border-hair-strong bg-surface hover:border-accent/60 hover:bg-accent-soft")
+        "drop-hero cursor-pointer rounded-2xl px-6 pt-14 pb-12 text-center titlebar-no-drag transition-[box-shadow,transform] duration-200 focus:outline-none focus-visible:shadow-focus " +
+        (dragging ? "is-dragging scale-[1.005]" : "")
       }
     >
-      <div className="flex flex-col items-center gap-2">
-        <div
-          className={
-            "w-12 h-12 rounded-xl flex items-center justify-center " +
-            (selected ? "bg-accent text-ink-inv shadow-glow-sm" : "bg-surface-3 text-accent")
-          }
-        >
-          {selected ? <Icon.File width={22} height={22} /> : <Icon.Upload width={22} height={22} />}
-        </div>
-        {selected ? (
-          <>
-            <div className="font-medium text-sm">{basename(selected)}</div>
-            <div className="text-xs text-ink-3">{selectedHint}</div>
-          </>
-        ) : (
-          <>
-            <div className="font-medium text-sm">{idleTitle}</div>
-            <div className="text-xs text-ink-3">or click to browse</div>
-          </>
-        )}
+      <div className="relative w-16 h-16 mx-auto mb-5">
+        <span className="absolute inset-0 rounded-xl bg-surface border border-hair-strong -rotate-[9deg] -translate-x-1.5 opacity-60" />
+        <span className="absolute inset-0 rounded-xl bg-surface border border-hair-strong rotate-6 translate-x-1.5 opacity-80" />
+        <span className="absolute inset-0 rounded-xl bg-surface border border-hair-strong shadow-raise flex items-center justify-center text-accent">
+          <Icon.Upload width={24} height={24} />
+        </span>
       </div>
+      <div className="text-[17px] font-semibold tracking-[-0.015em]">Drop a submissions ZIP</div>
+      <div className="text-[13px] text-ink-2 mt-1.5">
+        or <span className="text-accent font-medium">choose a file</span> from your computer
+      </div>
+      <div className="text-[12px] text-ink-3 mt-5">
+        The .zip from Canvas &ldquo;Download Submissions&rdquo;
+      </div>
+    </div>
+  );
+}
+
+function FileCard({ icon, value, onPick, placeholder, onDrop, setDragging }) {
+  const FIcon = icon;
+  return (
+    <div
+      onDragOver={onDrop ? (e) => { e.preventDefault(); setDragging && setDragging(true); } : undefined}
+      onDragLeave={onDrop ? () => setDragging && setDragging(false) : undefined}
+      onDrop={onDrop}
+      className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-surface border border-hair shadow-card titlebar-no-drag"
+    >
+      <div className="w-10 h-10 rounded-[10px] bg-accent-soft text-accent flex items-center justify-center shrink-0">
+        <FIcon width={20} height={20} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-semibold tracking-[-0.01em] truncate">
+          {value ? basename(value) : placeholder}
+        </div>
+        {value && <div className="text-[12px] text-ink-3 truncate mt-0.5 font-mono">{value}</div>}
+      </div>
+      <Button variant={value ? "ghost" : "subtle"} onClick={onPick}>
+        {value ? "Replace" : "Choose…"}
+      </Button>
     </div>
   );
 }
@@ -548,42 +719,102 @@ function FilePick({ icon, label, value, onPick, placeholder, inline, onClear }) 
 
 function Field({ label, hint, children }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-baseline justify-between">
-        <label className="text-sm font-medium">{label}</label>
-        {hint && <span className="text-xs text-ink-3">{hint}</span>}
+    <div className="space-y-1.5 min-w-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <label className="text-[12.5px] font-medium text-ink-2">{label}</label>
+        {hint && <span className="text-[11.5px] text-ink-3 truncate">{hint}</span>}
       </div>
       {children}
     </div>
   );
 }
 
-function RunningScreen({ progress }) {
-  const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+const prettyName = (n) => (n || "").replace(/_/g, " ");
+const initials = (n) =>
+  prettyName(n)
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
+function Avatar({ name }) {
   return (
-    <div className="fade-up flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-full max-w-md">
-        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent mb-3">
-          Grading in progress
+    <span className="w-[26px] h-[26px] shrink-0 rounded-full bg-surface-2 border border-hair text-[10.5px] font-semibold text-ink-2 flex items-center justify-center">
+      {initials(name) || "?"}
+    </span>
+  );
+}
+
+function RunningScreen({ progress, assignment, course }) {
+  // The engine reports "student N of M" as it starts each one; when the next
+  // one starts, the previous one is done. Keep the finished names to show a
+  // live list, and time per student for an estimate.
+  const [done, setDone] = useState([]);
+  const [startedAt] = useState(() => Date.now());
+  const lastRef = useRef(null);
+  useEffect(() => {
+    const cur = progress.student;
+    if (cur && cur !== lastRef.current) {
+      if (lastRef.current) setDone((d) => [lastRef.current, ...d]);
+      lastRef.current = cur;
+    }
+  }, [progress.student]);
+
+  const { current, total } = progress;
+  const finished = Math.max(0, current - 1);
+  const pct = total > 0 ? (finished / total) * 100 : 0;
+  const perStudent = finished > 0 ? (Date.now() - startedAt) / finished : null;
+  const left = perStudent && total ? Math.round(((total - finished) * perStudent) / 1000) : null;
+  const eta = left == null ? "" : left < 60 ? `About ${Math.max(1, left)} s left` : `About ${Math.round(left / 60)} min left`;
+
+  return (
+    <div className="space-y-6 fade-up">
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">Grading {assignment}</h1>
+          <p className="text-ink-2 text-[14.5px] mt-1">{course}</p>
         </div>
-        <div className="text-lg font-medium mb-4">
-          {progress.total > 0 ? (
-            <span className="tabular-nums">
-              {progress.current} <span className="text-ink-3">/</span> {progress.total}
-            </span>
-          ) : (
-            "Preparing submissions…"
-          )}
+        <div className="text-[44px] leading-none font-semibold tracking-[-0.035em] num">
+          {finished}
+          <span className="text-[18px] text-ink-3 font-medium tracking-normal"> / {total || "…"}</span>
         </div>
-        <div className="h-2 rounded-full bg-surface-3 overflow-hidden border border-hair">
+      </div>
+
+      <div>
+        <div className="h-1.5 rounded-full bg-surface-2 border border-hair overflow-hidden">
           <div
-            className="h-full rounded-full bg-accent shadow-glow-soft transition-all duration-300 ease-out"
-            style={{ width: `${Math.max(pct, progress.total > 0 ? 4 : 14)}%` }}
+            className={"h-full rounded-full bg-accent transition-[width] duration-500 ease-out " + (total ? "" : "animate-pulse")}
+            style={{ width: `${total ? Math.max(pct, 2) : 12}%` }}
           />
         </div>
-        <div className="mt-4 text-xs text-ink-3 h-4 font-mono">
-          {progress.student ? progress.student.replace(/_/g, " ") : ""}
+        <div className="flex justify-between text-[12px] text-ink-3 mt-2">
+          <span>{progress.student ? `Grading ${prettyName(progress.student)}` : "Preparing submissions…"}</span>
+          <span>{eta}</span>
         </div>
+      </div>
+
+      <div>
+        <div className="text-[13px] font-semibold mb-2">Students</div>
+        <ul className="border-t border-hair">
+          {progress.student && (
+            <li className="flex items-center gap-3 py-2.5 px-1 border-b border-hair text-ink-3">
+              <Avatar name={progress.student} />
+              <span className="flex-1 text-[13px]">{prettyName(progress.student)}</span>
+              <span className="w-3 h-3 rounded-full border-[1.5px] border-hair-strong border-t-accent animate-spin" />
+            </li>
+          )}
+          {done.slice(0, 8).map((n) => (
+            <li key={n} className="flex items-center gap-3 py-2.5 px-1 border-b border-hair fade-up">
+              <Avatar name={n} />
+              <span className="flex-1 text-[13px] font-medium">{prettyName(n)}</span>
+              <Badge tone="ok">Graded</Badge>
+            </li>
+          ))}
+        </ul>
+        {done.length > 8 && (
+          <div className="text-[12px] text-ink-3 mt-2">and {done.length - 8} more</div>
+        )}
       </div>
     </div>
   );
@@ -595,95 +826,98 @@ function ResultsScreen({ result, assignment, onReset, onReview }) {
   const graded = result?.success_count ?? students.length;
 
   return (
-    <div className="fade-up space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-7 fade-up">
+      <div className="flex items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">Grading complete</h1>
-          <p className="text-ink-2 text-sm mt-1.5">{assignment} batch finished.</p>
+          <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">Grading complete</h1>
+          <p className="text-ink-2 text-[14.5px] mt-1">
+            {assignment} · {graded} {graded === 1 ? "student" : "students"} graded
+            {issues.length ? `, ${issues.length} to check` : ""}
+          </p>
         </div>
         <Button variant="subtle" onClick={onReset}>
+          <Icon.Plus width={15} height={15} />
           Grade another
         </Button>
       </div>
 
-      <Card className="p-6">
-        <div className="grid grid-cols-3 gap-4">
-          <Stat label="Graded" value={graded} tone="accent" />
-          <Stat label="Issues" value={issues.length} tone={issues.length ? "warn" : "default"} />
-          <Stat label="Assignment" value={assignment} />
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-3">
-        {result?.master_workbook && (
-          <Button onClick={() => api.openPath(result.master_workbook)}>
-            Open instructor master
-            <Icon.ArrowRight width={16} height={16} />
-          </Button>
-        )}
-        {result?.graded_path && (
-          <Button variant="soft" onClick={() => api.openPath(result.graded_path)}>
-            <Icon.Folder width={16} height={16} />
-            Open graded folder
-          </Button>
-        )}
+      <div className="grid grid-cols-3 gap-2.5">
+        {[
+          ["Graded", graded, "text-ink"],
+          ["To check", issues.length, issues.length ? "text-warning" : "text-ink"],
+          ["Assignment", assignment, "text-ink"],
+        ].map(([l, v, tone]) => (
+          <div key={l} className="rounded-xl bg-surface border border-hair px-4 py-3">
+            <div className="text-[11.5px] text-ink-3">{l}</div>
+            <div className={`text-[22px] font-semibold tracking-[-0.02em] mt-0.5 num ${tone}`}>{v}</div>
+          </div>
+        ))}
       </div>
 
+      {(result?.master_workbook || result?.graded_path) && (
+        <div className="flex flex-wrap gap-2.5">
+          {result?.master_workbook && (
+            <Button onClick={() => api.openPath(result.master_workbook)}>
+              Open instructor master
+              <Icon.ArrowRight width={16} height={16} />
+            </Button>
+          )}
+          {result?.graded_path && (
+            <Button variant="subtle" onClick={() => api.openPath(result.graded_path)}>
+              <Icon.Folder width={15} height={15} />
+              Open graded folder
+            </Button>
+          )}
+        </div>
+      )}
+
       {issues.length > 0 && (
-        <Card className="p-6">
-          <h2 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <span className="text-warning">
-              <Icon.Alert width={16} height={16} />
-            </span>
+        <div className="rounded-2xl bg-warning-soft px-5 py-4">
+          <div className="text-[13px] font-semibold flex items-center gap-2 text-warning">
+            <Icon.Alert width={15} height={15} />
             Needs a look
-          </h2>
-          <ul className="space-y-3">
+          </div>
+          <ul className="mt-2.5 space-y-2.5">
             {issues.map((it, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-medium">{(it.student || "Unknown").replace(/_/g, " ")}</span>
-                <span className="text-ink-2"> — {it.problem}</span>
-                {it.action && <div className="text-xs text-ink-3 mt-0.5">→ {it.action}</div>}
+              <li key={i} className="text-[13px]">
+                <span className="font-medium">{prettyName(it.student || "Unknown")}</span>
+                <span className="text-ink-2">: {it.problem}</span>
+                {it.action && <div className="text-[12px] text-ink-3 mt-0.5">{it.action}</div>}
               </li>
             ))}
           </ul>
-        </Card>
+        </div>
       )}
 
-      <Card className="overflow-hidden">
-        <div className="px-6 py-3.5 border-b border-hair text-sm font-medium flex items-center justify-between">
-          <span>Students</span>
-          <span className="font-mono text-xs text-ink-3">{students.length}</span>
+      <div>
+        <div className="flex items-baseline justify-between mb-2">
+          <div className="text-[13px] font-semibold">Students</div>
+          <div className="text-[12px] text-ink-3 num">{students.length}</div>
         </div>
-        <ul className="divide-y divide-hair">
+        <ul className="border-t border-hair">
           {students.map((s, i) => (
             <li key={i}>
               <button
                 onClick={() => onReview && s.grade_file && onReview(s)}
                 disabled={!s.grade_file}
-                className="w-full px-6 py-3 flex items-center justify-between text-sm hover:bg-surface-3 transition-colors disabled:cursor-default text-left group"
+                className="titlebar-no-drag w-full flex items-center gap-3 py-2.5 px-1 border-b border-hair text-left hover:bg-ink/[0.025] transition-colors disabled:cursor-default group"
               >
-                <span className="flex items-center gap-2.5">
-                  <Dot tone="ok" />
-                  <span className="font-medium">{s.name.replace(/_/g, " ")}</span>
-                </span>
-                <span className="flex items-center gap-2.5">
-                  {s.grade_file && (
-                    <span className="text-xs text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Review →
-                    </span>
-                  )}
-                  <Badge tone="ok">{s.status || "graded"}</Badge>
-                </span>
+                <Avatar name={s.name} />
+                <span className="flex-1 text-[13px] font-medium">{prettyName(s.name)}</span>
+                {s.grade_file && (
+                  <span className="text-[12px] text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Review
+                  </span>
+                )}
+                <Badge tone="ok">{(s.status || "graded").replace(/^./, (c) => c.toUpperCase())}</Badge>
               </button>
             </li>
           ))}
           {students.length === 0 && (
-            <li className="px-6 py-8 text-sm text-ink-3 text-center">
-              No graded files were produced.
-            </li>
+            <li className="py-8 text-[13px] text-ink-3 text-center">No graded files were produced.</li>
           )}
         </ul>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -694,7 +928,7 @@ function ErrorScreen({ message, onReset }) {
       <div className="w-12 h-12 rounded-2xl bg-danger-soft text-danger flex items-center justify-center mb-4">
         <Icon.Alert width={24} height={24} />
       </div>
-      <h1 className="text-xl font-medium">Something went wrong</h1>
+      <h1 className="text-[20px] font-semibold tracking-[-0.015em]">Something went wrong</h1>
       <p className="text-ink-2 text-sm mt-2 max-w-md whitespace-pre-wrap">
         {message || "The grading run did not finish."}
       </p>
@@ -719,7 +953,7 @@ function SettingsScreen({ theme, setTheme }) {
   };
   return (
     <div className="fade-up space-y-6">
-      <h1 className="text-2xl font-medium tracking-tight">Settings</h1>
+      <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">Settings</h1>
       <Card className="p-6 space-y-3">
         <div className="text-sm font-medium">Appearance</div>
         <div className="flex gap-2">
@@ -1139,8 +1373,8 @@ function ManualScreen({ result, onPick, paperScores = {}, setStudentScores }) {
     <div className="fade-up space-y-5">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">Manual paper grading</h1>
-          <p className="text-ink-2 text-sm mt-1.5">
+          <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">Manual paper grading</h1>
+          <p className="text-ink-2 text-[14.5px] mt-2 leading-relaxed">
             {papers.length} write-up{papers.length === 1 ? "" : "s"}
             {gradedCount > 0 ? ` · ${gradedCount} scored` : ""}. Grade all with AI, review, then export PDFs.
           </p>
@@ -1268,8 +1502,8 @@ function HistoryScreen({ onOpen }) {
     <div className="fade-up space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">History</h1>
-          <p className="text-ink-2 text-sm mt-1.5">
+          <h1 className="text-[30px] leading-tight font-semibold tracking-[-0.025em]">History</h1>
+          <p className="text-ink-2 text-[14.5px] mt-2 leading-relaxed">
             Past grading runs. Open one to review students or grade papers again.
           </p>
         </div>
