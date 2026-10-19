@@ -8,6 +8,7 @@ and returns structured results.
 import os
 import sys
 import json
+import filecmp
 import shutil
 import tempfile
 from pathlib import Path
@@ -65,23 +66,27 @@ _ASSETS_FEEDBACK = os.path.join(_MA_GRADER_DIR, "assets_feedback")
 
 
 def _seed_workspace(workspace: str) -> None:
-    """Copy template xlsx + feedback json into the temp workspace."""
+    """Copy template xlsx + feedback json into the workspace.
+
+    The desktop app's workspace is the persistent Library folder, so these
+    copies outlive app updates. They're refreshed whenever the shipped file
+    differs; copying only when missing meant fixes to templates and feedback
+    wording never reached existing installs (new feedback codes even rendered
+    as raw "[CODE] {...}" text).
+    """
     tpl_dir = os.path.join(workspace, "templates")
     fb_dir = os.path.join(workspace, "feedback")
     os.makedirs(tpl_dir, exist_ok=True)
     os.makedirs(fb_dir, exist_ok=True)
 
-    for fname in os.listdir(_ASSETS_TEMPLATES):
-        src = os.path.join(_ASSETS_TEMPLATES, fname)
-        dst = os.path.join(tpl_dir, fname)
-        if not os.path.exists(dst) and os.path.isfile(src):
-            shutil.copy2(src, dst)
-
-    for fname in os.listdir(_ASSETS_FEEDBACK):
-        src = os.path.join(_ASSETS_FEEDBACK, fname)
-        dst = os.path.join(fb_dir, fname)
-        if not os.path.exists(dst) and os.path.isfile(src):
-            shutil.copy2(src, dst)
+    for src_dir, dst_dir in ((_ASSETS_TEMPLATES, tpl_dir), (_ASSETS_FEEDBACK, fb_dir)):
+        for fname in os.listdir(src_dir):
+            src = os.path.join(src_dir, fname)
+            dst = os.path.join(dst_dir, fname)
+            if not os.path.isfile(src):
+                continue
+            if not os.path.exists(dst) or not filecmp.cmp(src, dst, shallow=False):
+                shutil.copy2(src, dst)
 
 
 def grade_zip(
