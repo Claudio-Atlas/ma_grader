@@ -1,6 +1,6 @@
 {
   "name": "ma-grader-desktop",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "MA Grader — drag-and-drop autograder for MAT-144 spreadsheet assignments",
   "author": "Clayton Ragsdale",
   "license": "UNLICENSED",
