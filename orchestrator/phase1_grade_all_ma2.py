@@ -28,6 +28,7 @@ from writers.write_ma2_annual_budget_results import write_annual_budget_results_
 
 # ---- Error Handling ----
 from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error
+from utilities.humanize_sheet import humanize_grading_sheet
 # ------------------------
 
 
@@ -200,6 +201,15 @@ def phase1_grade_all_students_ma2(
             else:
                 logger.info(f"  Skipping Annual Budget (sheet missing)")
                 skipped_count += 1
+
+            # Rewrite comments in the student-facing voice + overall note.
+            try:
+                typed_name = None
+                if sheet_map.get("Income and Projection"):
+                    typed_name = student_wb[sheet_map["Income and Projection"]]["C1"].value
+                humanize_grading_sheet(ws_grading, "MA2", typed_name or student_name)
+            except Exception as e:
+                logger.warning(f"  Feedback rewrite skipped for {student_name}: {e}")
 
             grading_wb.save(grading_file)
             logger.info(f"  ✓ Graded: {student_name}")

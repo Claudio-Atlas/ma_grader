@@ -25,7 +25,12 @@ def grade_slope_formula(ws):
     formula = cell.value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "H19 does not contain a formula."
+        result["comment"] = (
+            "Your slope (H19) is a typed number instead of a formula. Use "
+            "=SLOPE(C29:C37, B29:B37) so it updates with your CPI table."
+            if formula not in (None, "") else
+            "Your slope (H19) is empty. Enter =SLOPE(C29:C37, B29:B37)."
+        )
         return result
 
     normalized = normalize_formula(formula)
@@ -36,9 +41,12 @@ def grade_slope_formula(ws):
         result["comment"] = "Slope formula is correct."
     elif normalized.startswith("=slope("):
         result["points"] = 1
-        result["comment"] = "Slope formula present but range or arguments incorrect."
+        result["comment"] = (
+            "Your SLOPE formula (H19) is close, but the ranges aren't quite right. It "
+            "should use the CPI values first, then the years: =SLOPE(C29:C37, B29:B37)."
+        )
     else:
-        result["comment"] = "Incorrect or missing slope formula."
+        result["comment"] = "Your slope (H19) should use the SLOPE function: =SLOPE(C29:C37, B29:B37)."
 
     return result
 
@@ -53,7 +61,12 @@ def grade_intercept_formula(ws):
     formula = cell.value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "H20 does not contain a formula."
+        result["comment"] = (
+            "Your intercept (H20) is a typed number instead of a formula. Use "
+            "=INTERCEPT(C29:C37, B29:B37) so it updates with your CPI table."
+            if formula not in (None, "") else
+            "Your intercept (H20) is empty. Enter =INTERCEPT(C29:C37, B29:B37)."
+        )
         return result
 
     normalized = normalize_formula(formula)
@@ -64,8 +77,11 @@ def grade_intercept_formula(ws):
         result["comment"] = "Intercept formula is correct."
     elif normalized.startswith("=intercept("):
         result["points"] = 1
-        result["comment"] = "Intercept formula present but range or arguments incorrect."
+        result["comment"] = (
+            "Your INTERCEPT formula (H20) is close, but the ranges aren't quite right. It "
+            "should use the CPI values first, then the years: =INTERCEPT(C29:C37, B29:B37)."
+        )
     else:
-        result["comment"] = "Incorrect or missing intercept formula."
+        result["comment"] = "Your intercept (H20) should use the INTERCEPT function: =INTERCEPT(C29:C37, B29:B37)."
 
     return result

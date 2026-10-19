@@ -67,6 +67,19 @@ def grade_credit_card_parameters(student_file_path):
     results = {}
     total = 0
     comments = []
+    labels = {
+        "C13": "APR", "C14": "starting balance", "C15": "payments per year",
+        "C17": "minimum payment percentage", "C18": "fixed minimum payment",
+    }
+
+    def show(cell, v):
+        if not isinstance(v, (int, float)):
+            return f"\u201c{v}\u201d"
+        if cell in ("C13", "C17") and v <= 1:
+            return f"{v * 100:g}%"
+        if cell in ("C14", "C18"):
+            return f"${v:,.2f}".replace(".00", "")
+        return f"{v:g}"
 
     for cell, expected in checks.items():
         student_val = ws_cc[cell].value
@@ -76,7 +89,10 @@ def grade_credit_card_parameters(student_file_path):
             try:
                 student_val = float(student_val)
             except:
-                entry["comment"] = f"{cell} should be numeric. Found: {student_val}"
+                entry["comment"] = (
+                    f"Your {labels[cell]} ({cell}) should be a number, but it contains "
+                    f"{show(cell, student_val)}. Type just the number."
+                )
                 results[cell] = entry
                 comments.append(entry["comment"])
                 continue
@@ -87,7 +103,8 @@ def grade_credit_card_parameters(student_file_path):
             entry["comment"] = f"{cell} correct ({student_val})."
         else:
             entry["comment"] = (
-                f"{cell} incorrect. Expected {expected}, found {student_val}."
+                f"Your {labels[cell]} ({cell}) is {show(cell, student_val)}, but the "
+                f"description in cell A3 gives {show(cell, expected)}. Double-check it against A3."
             )
 
         total += entry["points"]

@@ -25,9 +25,10 @@ def write_income_projection_results(ws_grading, results):
         slope_pts = results["slope_formula"]["points"]
         intercept_pts = results["intercept_formula"]["points"]
         total_slope_intercept = slope_pts + intercept_pts
+        # Each comment names its own cell (H19 / H20), so no label prefix.
         combined_comment = (
-            f"Slope: {results['slope_formula']['comment']} | "
-            f"Intercept: {results['intercept_formula']['comment']}"
+            f"{results['slope_formula']['comment']} | "
+            f"{results['intercept_formula']['comment']}"
         )
 
         ws_grading["F5"] = total_slope_intercept

@@ -141,6 +141,7 @@ ipcMain.handle("grade:run", async (evt, payload) => {
       workspace,
       isPackaged: app.isPackaged,
       resourcesPath: process.resourcesPath,
+      env: aiNotesEnv(payload),
     },
     (event) => {
       if (!sender.isDestroyed()) sender.send("grade:event", event);
@@ -494,6 +495,17 @@ ipcMain.handle("pdf:paperFeedbackBatch", async (_evt, items) => {
   return { ok: true, count, folder, errors };
 });
 
+// Env for grading runs: when "Write overall notes with AI" is on and a key is
+// stored, the engine asks Claude for each student's overall note.
+function aiNotesEnv(payload) {
+  if (!payload?.aiNotes) return {};
+  const k = readStoredKey();
+  if (!k) return {};
+  const env = { ANTHROPIC_API_KEY: k, MA_GRADER_AI_NOTES: "1" };
+  if (payload.model) env.MA_GRADER_AI_MODEL = String(payload.model);
+  return env;
+}
+
 ipcMain.handle("paper:aiGrade", async (_evt, paperPath, strictness, model, gradeFile) => {
   const k = readStoredKey();
   if (!k) return { error: "No API key set. Add your Anthropic key in Settings." };
@@ -525,6 +537,7 @@ ipcMain.handle("grade:runOne", async (evt, payload) => {
       workspace,
       isPackaged: app.isPackaged,
       resourcesPath: process.resourcesPath,
+      env: aiNotesEnv(payload),
     },
     (event) => {
       if (!sender.isDestroyed()) sender.send("grade:event", event);

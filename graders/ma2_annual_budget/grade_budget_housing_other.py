@@ -54,7 +54,8 @@ def grade_budget_housing_other(ws):
             freq_points = 0.5
         else:
             comments.append(
-                f"B{row} frequency must be numeric, > 0, and ≤ 52."
+                f"The frequency in B{row} should be how many times a year you pay this "
+                f"(a number from 1 to 52)."
             )
 
         total_points += freq_points
@@ -71,7 +72,7 @@ def grade_budget_housing_other(ws):
             cost_points = 0.5
         else:
             comments.append(
-                f"C{row} cost must be numeric and greater than 0."
+                f"The cost in C{row} should be a dollar amount greater than $0."
             )
 
         total_points += cost_points
@@ -99,11 +100,15 @@ def grade_budget_housing_other(ws):
                 dac_points = 1.0
             else:
                 comments.append(
-                    f"D{row} incorrect formula. Expected a multiplication using C{row} and B{row}."
+                    f"Your Total Annual Cost (D{row}) should multiply the cost by the "
+                    f"frequency: =C{row}*B{row}."
                 )
         else:
             comments.append(
-                f"D{row} must contain a formula referencing C{row} and B{row}."
+                (f"Your Total Annual Cost (D{row}) is a typed number. Make it a formula, "
+                 f"=C{row}*B{row}, so it updates if the cost or frequency changes.")
+                if dac_formula not in (None, "") else
+                f"Your Total Annual Cost (D{row}) is empty. Enter =C{row}*B{row}."
             )
 
         total_points += dac_points

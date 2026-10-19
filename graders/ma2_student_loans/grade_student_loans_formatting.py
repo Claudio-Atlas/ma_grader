@@ -1,5 +1,7 @@
 from openpyxl.styles.numbers import BUILTIN_FORMATS
 
+from utilities.student_feedback import format_issue
+
 def get_number_format(cell):
     """Return normalized number format for comparison."""
     fmt = cell.number_format.strip().lower()
@@ -42,6 +44,13 @@ def grade_student_loans_formatting(ws):
     # -----------------------------
     # Expected formats
     # -----------------------------
+    LABELS = {
+        "B14": "interest rate", "C24": "years in school", "B27": "payments per year",
+        "B28": "number of years", "C25": "additional interest", "C26": "new principal",
+        "B29": "subsidized monthly payment", "B30": "subsidized total paid",
+        "B31": "subsidized interest paid", "C29": "unsubsidized monthly payment",
+        "C30": "unsubsidized total paid", "C31": "unsubsidized interest paid",
+    }
     percent_cells = ["B14"]
     integer_cells = ["C24", "B27", "B28"]
     currency_cells = ["B29", "B30", "B31", "C25", "C26", "C29", "C30", "C31"]
@@ -61,10 +70,7 @@ def grade_student_loans_formatting(ws):
                 entry["points"] = 0.25
                 entry["comment"] = f"{cell_ref} formatted correctly as {expected_desc}."
             else:
-                entry["comment"] = (
-                    f"{cell_ref} incorrect format. Expected {expected_desc}. "
-                    f"Found '{fmt}'."
-                )
+                entry["comment"] = format_issue(cell_ref, expected_desc, fmt, LABELS.get(cell_ref))
         except Exception as e:
             entry["comment"] = f"Error checking {cell_ref}: {e}"
 

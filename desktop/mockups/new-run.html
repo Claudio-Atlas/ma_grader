@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MA Grader — New run mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* =====================================================================
+   Direction A — "native Mac pro tool" (light)  +  C — layered dark.
+   Mockup only: not wired to the app. Tokens here are what would move
+   into src/index.css.
+   ===================================================================== */
+:root {
+  --wall-1: #c9d6e8; --wall-2: #e9dfd3;
+  --win: #fbfbfa;
+  --side: rgba(246, 246, 244, 0.72);
+  --side-line: rgba(0, 0, 0, 0.07);
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --hover: rgba(0, 0, 0, 0.04);
+  --line: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.14);
+  --text: #111113;
+  --text-2: #5f6168;
+  --text-3: #9a9ca3;
+  --accent: #0a7cff;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(10, 124, 255, 0.09);
+  --accent-line: rgba(10, 124, 255, 0.35);
+  --good: #1f8a4c; --good-soft: rgba(31, 138, 76, 0.1);
+  --review: #8a5cf6; --review-soft: rgba(138, 92, 246, 0.11);
+  --warn: #b26b00; --warn-soft: rgba(178, 107, 0, 0.1);
+  --shadow-win: 0 0 0 0.5px rgba(0,0,0,.18), 0 30px 80px -20px rgba(20,30,50,.35), 0 12px 30px -12px rgba(20,30,50,.2);
+  --shadow-raise: 0 1px 2px rgba(0,0,0,.06), 0 1px 0 rgba(0,0,0,.02);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px -12px rgba(0,0,0,.12);
+  --drop-glow: radial-gradient(120% 90% at 50% 0%, rgba(10,124,255,.07), transparent 60%);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --wall-1: #0d1520; --wall-2: #1a1420;
+  --win: #0b0d10;
+  --side: rgba(20, 23, 28, 0.66);
+  --side-line: rgba(255, 255, 255, 0.06);
+  --surface: #12151a;
+  --surface-2: #171b21;
+  --hover: rgba(255, 255, 255, 0.045);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.13);
+  --text: #eceef1;
+  --text-2: #9aa1ab;
+  --text-3: #626a75;
+  --accent: #38bdf8;
+  --accent-ink: #04121b;
+  --accent-soft: rgba(56, 189, 248, 0.11);
+  --accent-line: rgba(56, 189, 248, 0.4);
+  --good: #4ade80; --good-soft: rgba(74, 222, 128, 0.11);
+  --review: #b69cff; --review-soft: rgba(182, 156, 255, 0.13);
+  --warn: #f0b85a; --warn-soft: rgba(240, 184, 90, 0.12);
+  --shadow-win: 0 0 0 0.5px rgba(255,255,255,.12), 0 30px 90px -20px rgba(0,0,0,.8);
+  --shadow-raise: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.4);
+  --shadow-card: inset 0 1px 0 rgba(255,255,255,.04), 0 10px 30px -14px rgba(0,0,0,.7);
+  --drop-glow: radial-gradient(120% 90% at 50% 0%, rgba(56,189,248,.09), transparent 60%);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--text);
+  background:
+    radial-gradient(60% 80% at 15% 20%, var(--wall-1), transparent 70%),
+    radial-gradient(60% 80% at 85% 80%, var(--wall-2), transparent 70%),
+    var(--wall-1);
+  display: grid; place-items: center;
+  padding: 56px 24px 32px;
+  min-height: 100vh;
+  transition: background .4s;
+}
+.mono { font-family: "Geist Mono", ui-monospace, Menlo, monospace; font-feature-settings: "tnum"; }
+.num { font-feature-settings: "tnum"; }
+
+/* ---------- mock controls (not part of the app) ---------- */
+.mockbar {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; align-items: center; z-index: 10;
+  background: rgba(20,20,24,.82); color: #fff; padding: 5px; border-radius: 999px;
+  backdrop-filter: blur(12px); font-size: 12px;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,.4);
+}
+.mockbar span { opacity: .55; padding: 0 6px 0 10px; }
+.mockbar button {
+  all: unset; cursor: pointer; padding: 5px 11px; border-radius: 999px; color: rgba(255,255,255,.75);
+}
+.mockbar button[aria-pressed="true"] { background: rgba(255,255,255,.16); color: #fff; }
+.mockbar .sep { width: 1px; height: 16px; background: rgba(255,255,255,.18); }
+
+/* ---------- window ---------- */
+.stage { width: min(1080px, 100%); }
+.window {
+  width: 100%; height: 720px; grid-template-rows: 100%;
+  border-radius: 12px; overflow: hidden;
+  background: var(--win);
+  box-shadow: var(--shadow-win);
+  display: grid; grid-template-columns: 232px 1fr;
+  transition: background .3s;
+}
+
+/* Sidebar: translucent "vibrancy" over the wallpaper */
+.sidebar {
+  background: var(--side);
+  backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  border-right: 1px solid var(--side-line);
+  display: flex; flex-direction: column;
+  padding: 0 10px 10px;
+}
+.traffic { display: flex; gap: 8px; padding: 18px 8px 22px; }
+.traffic i { width: 12px; height: 12px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.18); }
+.traffic i:nth-child(1) { background: #ff5f57; }
+.traffic i:nth-child(2) { background: #febc2e; }
+.traffic i:nth-child(3) { background: #28c840; }
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; }
+.mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(145deg, var(--accent), color-mix(in oklab, var(--accent) 60%, #6d28d9));
+  display: grid; place-items: center; color: var(--accent-ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 6px -2px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+.brand b { font-weight: 600; font-size: 13.5px; letter-spacing: -0.01em; }
+
+.navlabel { font-size: 11px; font-weight: 500; color: var(--text-3); padding: 14px 10px 6px; }
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; border-radius: 7px;
+  font-size: 13px; color: var(--text-2); text-decoration: none; cursor: default;
+}
+.nav a:hover { background: var(--hover); }
+.nav a.on { background: var(--accent-soft); color: var(--text); font-weight: 500; }
+.nav a.on svg { color: var(--accent); }
+.nav a kbd { margin-left: auto; }
+.nav svg { width: 16px; height: 16px; flex: none; color: var(--text-3); }
+kbd {
+  font-family: "Geist Mono", ui-monospace, monospace; font-size: 10.5px; color: var(--text-3);
+  border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; background: transparent;
+}
+.side-foot { margin-top: auto; }
+.keychip {
+  display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px;
+  font-size: 12px; color: var(--text-2);
+}
+.keychip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+
+/* Main column */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.sidebar { min-height: 0; }
+.toolbar {
+  height: 52px; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 0 18px;
+}
+.search {
+  display: flex; align-items: center; gap: 8px; width: 240px;
+  padding: 6px 10px; border-radius: 8px; background: var(--surface-2);
+  font-size: 12.5px; color: var(--text-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.search kbd { margin-left: auto; }
+.content { flex: 1; overflow: auto; padding: 8px 56px 40px; }
+.inner { max-width: 680px; margin: 0 auto; }
+
+h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.025em; font-weight: 600; margin: 18px 0 8px; }
+.lede { color: var(--text-2); font-size: 14.5px; line-height: 1.5; margin: 0 0 28px; }
+
+/* Segmented control — filled thumb, no glow */
+.seg {
+  display: inline-grid; grid-auto-flow: column; gap: 2px; padding: 2px; border-radius: 9px;
+  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+}
+.seg button {
+  all: unset; cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  padding: 5px 14px; border-radius: 7px; transition: background .15s, color .15s;
+}
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-raise); }
+
+/* Drop zone — the hero. Soft surface, no dashed border. */
+.drop {
+  margin-top: 18px; position: relative;
+  border-radius: 16px; padding: 56px 24px 52px; text-align: center;
+  background: var(--drop-glow), var(--surface);
+  box-shadow: var(--shadow-card), inset 0 0 0 1px var(--line);
+  transition: box-shadow .2s, transform .2s;
+  cursor: pointer;
+}
+.drop:hover { box-shadow: var(--shadow-card), inset 0 0 0 1px var(--line-strong); }
+.drop.dragging { box-shadow: var(--shadow-card), inset 0 0 0 1.5px var(--accent-line), 0 0 0 6px var(--accent-soft); transform: scale(1.005); }
+.stack { width: 64px; height: 64px; margin: 0 auto 18px; position: relative; }
+.stack i {
+  position: absolute; inset: 0; border-radius: 12px; background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong), 0 4px 10px -6px rgba(0,0,0,.25);
+}
+.stack i:nth-child(1) { transform: rotate(-9deg) translate(-6px, 2px); opacity: .55; }
+.stack i:nth-child(2) { transform: rotate(6deg) translate(6px, 1px); opacity: .75; }
+.stack i:nth-child(3) { display: grid; place-items: center; color: var(--accent); }
+.drop h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 6px; }
+.drop p { margin: 0; color: var(--text-2); font-size: 13px; }
+.drop p a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.hintrow { display: flex; justify-content: center; gap: 18px; margin-top: 22px; font-size: 12px; color: var(--text-3); }
+.hintrow span { display: inline-flex; align-items: center; gap: 6px; }
+
+.recent { margin-top: 34px; }
+.sechead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.sechead h3 { font-size: 13px; font-weight: 600; margin: 0; }
+.sechead a { font-size: 12.5px; color: var(--text-2); text-decoration: none; }
+.list { border-top: 1px solid var(--line); }
+.row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center;
+  padding: 11px 4px; border-bottom: 1px solid var(--line); font-size: 13px;
+}
+.row .t { font-weight: 500; }
+.row .s { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500;
+  padding: 2px 8px; border-radius: 999px;
+}
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.review { background: var(--review-soft); color: var(--review); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.neutral { background: var(--surface-2); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* ---------- Ready state ---------- */
+.filecard {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow-card), inset 0 0 0 1px var(--line);
+}
+.fileicon {
+  width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent);
+}
+.filecard .t { font-weight: 600; font-size: 14px; letter-spacing: -0.01em; }
+.filecard .s { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+.ghost {
+  all: unset; cursor: pointer; margin-left: auto; font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  padding: 6px 10px; border-radius: 7px;
+}
+.ghost:hover { background: var(--hover); color: var(--text); }
+
+.label { font-size: 12.5px; font-weight: 500; color: var(--text-2); margin: 28px 0 10px; display: flex; justify-content: space-between; }
+.label em { font-style: normal; color: var(--text-3); font-weight: 400; }
+.assign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.acard {
+  all: unset; cursor: pointer; padding: 14px 14px 13px; border-radius: 12px;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow .15s, background .15s;
+}
+.acard:hover { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.acard[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.acard .k { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; }
+.acard .k .check {
+  width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  display: grid; place-items: center; color: var(--accent-ink);
+}
+.acard[aria-pressed="true"] .check { background: var(--accent); box-shadow: none; }
+.acard .d { font-size: 12px; color: var(--text-2); margin-top: 6px; line-height: 1.45; }
+.detected { font-size: 11.5px; color: var(--accent); margin-top: 8px; display: none; }
+.acard[aria-pressed="true"] .detected { display: block; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.input {
+  width: 100%; font: inherit; font-size: 13px; color: var(--text);
+  padding: 9px 11px; border-radius: 9px; border: none; outline: none;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+}
+.input:focus { box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft); }
+.fieldwrap small { display: block; font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
+.fieldname { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+
+.actions { display: flex; align-items: center; justify-content: space-between; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); }
+.actions .meta { font-size: 12.5px; color: var(--text-3); }
+.primary {
+  all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 600; color: var(--accent-ink);
+  padding: 9px 16px; border-radius: 9px; background: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 1px 2px rgba(0,0,0,.15), 0 6px 16px -8px var(--accent);
+  transition: filter .15s, transform .1s;
+}
+.primary:hover { filter: brightness(1.06); }
+.primary:active { transform: translateY(.5px); }
+.primary kbd { color: inherit; border-color: color-mix(in oklab, var(--accent-ink) 30%, transparent); opacity: .75; }
+
+/* ---------- Grading state ---------- */
+.progress-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.bignum { font-size: 44px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; }
+.bignum small { font-size: 18px; color: var(--text-3); font-weight: 500; letter-spacing: -0.01em; }
+.bar { height: 6px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); margin: 18px 0 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .5s cubic-bezier(.2,.8,.2,1); }
+.barmeta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+.statrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 24px 0 26px; }
+.stat { padding: 12px 14px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+.stat .l { font-size: 11.5px; color: var(--text-3); }
+.stat .v { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
+.live .row { grid-template-columns: 28px 1fr 90px auto; animation: rowin .35s cubic-bezier(.2,.8,.2,1); }
+.avatar {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 600; color: var(--text-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line);
+}
+.score { text-align: right; font-weight: 600; }
+.score small { color: var(--text-3); font-weight: 400; }
+.row.pending { color: var(--text-3); }
+.spinner { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line-strong); border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes rowin { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } }
+
+.state { display: none; animation: fadein .35s cubic-bezier(.2,.8,.2,1); }
+.state.on { display: block; }
+
+.note { text-align: center; color: rgba(0,0,0,.45); font-size: 12px; margin-top: 18px; }
+:root[data-theme="dark"] .note { color: rgba(255,255,255,.4); }
+
+@media (max-width: 760px) {
+  .window { grid-template-columns: 1fr; height: auto; }
+  .sidebar { display: none; }
+  .content { padding: 8px 16px 32px; }
+  .assign, .fields, .statrow { grid-template-columns: 1fr; }
+  .search { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+  <span>State</span>
+  <button data-state="drop" aria-pressed="true">1 · Drop</button>
+  <button data-state="ready" aria-pressed="false">2 · Ready</button>
+  <button data-state="grading" aria-pressed="false">3 · Grading</button>
+  <div class="sep"></div>
+  <button data-theme="light" aria-pressed="true">Light</button>
+  <button data-theme="dark" aria-pressed="false">Dark</button>
+</div>
+
+<div class="stage">
+<div class="window">
+  <!-- ================= Sidebar ================= -->
+  <aside class="sidebar">
+    <div class="traffic"><i></i><i></i><i></i></div>
+    <div class="brand">
+      <div class="mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <b>MA Grader</b>
+    </div>
+
+    <nav class="nav">
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>New run<kbd>⌘N</kbd></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>Library</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l2.5 2.5"/><circle cx="12" cy="12" r="8"/></svg>History</a>
+
+      <div class="navlabel">Review</div>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Manual grade<span class="pill review" style="margin-left:auto">3</span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4M10 13h5M10 16h5"/></svg>Papers</a>
+    </nav>
+
+    <div class="side-foot">
+      <nav class="nav"><a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings<kbd>⌘,</kbd></a></nav>
+      <div class="keychip"><span class="dot"></span>AI grading ready</div>
+    </div>
+  </aside>
+
+  <!-- ================= Main ================= -->
+  <section class="main">
+    <div class="toolbar">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        Search students, runs…<kbd>⌘K</kbd>
+      </div>
+    </div>
+
+    <div class="content"><div class="inner">
+
+      <!-- ---------- State 1: Drop ---------- -->
+      <div class="state on" id="s-drop">
+        <h1>Grade a class</h1>
+        <p class="lede">Drop the submissions ZIP from Canvas. MA Grader detects the assignment, grades every workbook, and builds your master sheet.</p>
+
+        <div class="seg" role="group" aria-label="Scope">
+          <button aria-pressed="true">Whole class</button>
+          <button aria-pressed="false">Single student</button>
+        </div>
+
+        <div class="drop" id="drop">
+          <div class="stack"><i></i><i></i><i>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+          </i></div>
+          <h2>Drop a submissions ZIP</h2>
+          <p>or <a href="#">choose a file</a> from your computer</p>
+          <div class="hintrow">
+            <span><kbd>⌘O</kbd> Open</span>
+            <span>.zip from Canvas “Download submissions”</span>
+          </div>
+        </div>
+
+        <div class="recent">
+          <div class="sechead"><h3>Recent runs</h3><a href="#">View all</a></div>
+          <div class="list">
+            <div class="row"><div><div class="t">MA2 · Section 01</div><div class="s">Oct 12 · 31 students</div></div><span class="pill review">3 to review</span><span class="mono" style="color:var(--text-3);font-size:12px">avg 86.4</span></div>
+            <div class="row"><div><div class="t">MA1 · Section 01</div><div class="s">Sep 21 · 32 students</div></div><span class="pill good">Complete</span><span class="mono" style="color:var(--text-3);font-size:12px">avg 91.2</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- State 2: Ready ---------- -->
+      <div class="state" id="s-ready">
+        <h1>Ready to grade</h1>
+        <p class="lede">Check the details, then start. Nothing is written until you press Grade.</p>
+
+        <div class="filecard">
+          <div class="fileicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M11 11h2M11 14h2M11 17h2"/></svg></div>
+          <div>
+            <div class="t">submissions.zip</div>
+            <div class="s"><span class="num">31</span> workbooks · <span class="num">29</span> write-ups · 14.2 MB</div>
+          </div>
+          <button class="ghost">Replace</button>
+        </div>
+
+        <div class="label">Assignment <em>Detected from file names</em></div>
+        <div class="assign">
+          <button class="acard" aria-pressed="false"><div class="k">MA1 <span class="check"></span></div><div class="d">Currency &amp; unit conversion, income analysis</div></button>
+          <button class="acard" aria-pressed="true"><div class="k">MA2 <span class="check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div><div class="d">Income projection, budget, credit cards, loans</div><div class="detected">Detected</div></button>
+          <button class="acard" aria-pressed="false"><div class="k">MA3 <span class="check"></span></div><div class="d">Descriptive statistics &amp; histogram</div></button>
+        </div>
+
+        <div class="label">Details</div>
+        <div class="fields">
+          <div class="fieldwrap"><div class="fieldname">Course</div><input class="input" value="MAT 144 · Section 01" /><small>Names the output folder</small></div>
+          <div class="fieldwrap"><div class="fieldname">Save to</div><input class="input mono" value="~/MA_Grader_Output" /><small>Your Library folder</small></div>
+        </div>
+
+        <div class="actions">
+          <span class="meta">About 1 minute · AI paper grading runs after</span>
+          <button class="primary" id="go">Grade 31 submissions <kbd>⌘↵</kbd></button>
+        </div>
+      </div>
+
+      <!-- ---------- State 3: Grading ---------- -->
+      <div class="state" id="s-grading">
+        <div class="progress-head">
+          <div>
+            <h1 style="margin-bottom:4px">Grading MA2</h1>
+            <p class="lede" style="margin:0">MAT 144 · Section 01</p>
+          </div>
+          <div class="bignum num"><span id="done">0</span><small> / 31</small></div>
+        </div>
+        <div class="bar"><i id="barfill"></i></div>
+        <div class="barmeta"><span id="current">Starting…</span><span id="eta">~1 min left</span></div>
+
+        <div class="statrow">
+          <div class="stat"><div class="l">Average so far</div><div class="v num" id="avg">—</div></div>
+          <div class="stat"><div class="l">Needs review</div><div class="v num" id="rev" style="color:var(--review)">0</div></div>
+          <div class="stat"><div class="l">Issues</div><div class="v num" id="iss">0</div></div>
+        </div>
+
+        <div class="sechead"><h3>Students</h3><a href="#">Open master sheet</a></div>
+        <div class="list live" id="live"></div>
+      </div>
+
+    </div></div>
+  </section>
+</div>
+<p class="note">Mockup · sample data · not connected to the grading engine</p>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+
+function setState(name) {
+  $$(".state").forEach(s => s.classList.toggle("on", s.id === "s-" + name));
+  $$(".mockbar [data-state]").forEach(b => b.setAttribute("aria-pressed", b.dataset.state === name));
+  if (name === "grading") startGrading(); else stopGrading();
+}
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $$(".mockbar [data-theme]").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === t));
+  try { localStorage.setItem("mock-theme", t); } catch {}
+}
+$$(".mockbar [data-state]").forEach(b => b.onclick = () => setState(b.dataset.state));
+$$(".mockbar [data-theme]").forEach(b => b.onclick = () => setTheme(b.dataset.theme));
+try { const t = localStorage.getItem("mock-theme"); if (t) setTheme(t); } catch {}
+
+// Segmented + assignment cards are clickable in the mock
+$$(".seg button").forEach(b => b.onclick = () => $$(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b)));
+$$(".acard").forEach(b => b.onclick = () => $$(".acard").forEach(x => {
+  const on = x === b; x.setAttribute("aria-pressed", on);
+  x.querySelector(".check").innerHTML = on ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : "";
+}));
+
+// Drop zone: drag highlight, click/drop -> ready
+const drop = $("#drop");
+drop.onclick = () => setState("ready");
+["dragenter", "dragover"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("dragging"); }));
+["dragleave", "drop"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove("dragging"); if (e === "drop") setState("ready"); }));
+$("#go").onclick = () => setState("grading");
+
+// Simulated live grading (fictional sample names)
+const NAMES = ["Avery Chen","Jordan Patel","Sam Okafor","Riley Brooks","Morgan Diaz","Taylor Nguyen","Casey Moreau","Quinn Alvarez","Jamie Lindqvist","Drew Hayashi","Parker Osei","Reese Kowalski","Skyler Grant","Emerson Ruiz","Rowan Fischer","Hayden Cole","Logan Mbeki","Sage Romano","Finley Park","Blake Ivanova","Dakota Shah","Kendall Price","Peyton Laurent","Cameron Yu","Harper Quist","Alexis Duarte","Robin Achebe","Jules Marsh","Elliot Varga","Noel Adeyemi","Marley Stone"];
+let timer = null, idx = 0, total = 0, reviews = 0;
+function initials(n) { return n.split(" ").map(p => p[0]).join(""); }
+function row(name, score, status) {
+  const pill = status === "review" ? '<span class="pill review">Needs review</span>'
+            : status === "warn" ? '<span class="pill warn">Missing tab</span>'
+            : '<span class="pill good">Graded</span>';
+  return `<div class="row"><span class="avatar">${initials(name)}</span><div><div class="t">${name}</div><div class="s">5 tabs checked</div></div><div class="score num">${score}<small> /100</small></div>${pill}</div>`;
+}
+function pendingRow(name) {
+  return `<div class="row pending" id="pending"><span class="avatar">${initials(name)}</span><div><div class="t">${name}</div><div class="s">Checking Credit Cards…</div></div><div></div><span class="spinner"></span></div>`;
+}
+function startGrading() {
+  stopGrading(); idx = 0; total = 0; reviews = 0;
+  const live = $("#live"); live.innerHTML = pendingRow(NAMES[0]);
+  $("#barfill").style.width = "0%"; $("#done").textContent = "0"; $("#avg").textContent = "—"; $("#rev").textContent = "0";
+  timer = setInterval(() => {
+    const name = NAMES[idx];
+    const score = Math.round(68 + Math.random() * 31);
+    const status = idx % 9 === 4 ? "review" : idx === 11 ? "warn" : "ok";
+    if (status === "review") reviews++;
+    total += score; idx++;
+    $("#pending")?.remove();
+    live.insertAdjacentHTML("afterbegin", row(name, score, status));
+    if (idx < NAMES.length) live.insertAdjacentHTML("afterbegin", pendingRow(NAMES[idx]));
+    while (live.children.length > 7) live.lastElementChild.remove();
+    $("#done").textContent = idx;
+    $("#barfill").style.width = (idx / NAMES.length * 100) + "%";
+    $("#avg").textContent = (total / idx).toFixed(1);
+    $("#rev").textContent = reviews;
+    $("#iss").textContent = idx > 11 ? 1 : 0;
+    $("#current").textContent = idx < NAMES.length ? "Grading " + NAMES[idx] : "Done — writing master sheet";
+    $("#eta").textContent = idx < NAMES.length ? "~" + Math.max(1, Math.round((NAMES.length - idx) * 0.6)) + " s left" : "";
+    if (idx >= NAMES.length) stopGrading();
+  }, 650);
+}
+function stopGrading() { if (timer) clearInterval(timer); timer = null; }
+</script>
+</body>
+</html>

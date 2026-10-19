@@ -152,12 +152,14 @@ export default function App() {
               assignment,
               paperPath: assignment === "MA2" ? paperPath || undefined : undefined,
               workspace: outputFolder || undefined,
+              ...aiNotePrefs(),
             })
           : await api.runGrading({
               zipPath,
               course: course.trim(),
               assignment,
               workspace: outputFolder || undefined,
+              ...aiNotePrefs(),
             });
       setResult(res);
       setPhase(res?.error ? "error" : "done");
@@ -872,6 +874,7 @@ function ApiKeyCard() {
 
       <ModelPicker />
       <StrictnessPicker />
+      <AiNotesToggle />
     </Card>
   );
 }
@@ -920,6 +923,62 @@ function ModelPicker() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Whether grading runs ask Claude to write each student's overall note (the
+// rule-based note is used otherwise, or whenever the AI call fails).
+function aiNotePrefs() {
+  try {
+    return {
+      aiNotes: localStorage.getItem("ma-ai-notes") === "1",
+      model: localStorage.getItem("ma-ai-model") || undefined,
+    };
+  } catch {
+    return { aiNotes: false };
+  }
+}
+
+function AiNotesToggle() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    try {
+      setOn(localStorage.getItem("ma-ai-notes") === "1");
+    } catch {}
+  }, []);
+  const toggle = () => {
+    const next = !on;
+    try {
+      localStorage.setItem("ma-ai-notes", next ? "1" : "0");
+    } catch {}
+    setOn(next);
+  };
+  return (
+    <div className="pt-3 border-t border-hair flex items-start justify-between gap-4">
+      <div>
+        <div className="text-sm font-medium">Write overall notes with AI</div>
+        <p className="text-xs text-ink-3 mt-1">
+          Claude writes each student's overall note from their grading results. Student names
+          are never sent. Off: a built-in note is used instead.
+        </p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={on}
+        onClick={toggle}
+        className={
+          "titlebar-no-drag shrink-0 w-10 h-6 rounded-full p-0.5 transition-colors " +
+          (on ? "bg-accent" : "bg-surface-3 border border-hair")
+        }
+      >
+        <span
+          className={
+            "block w-5 h-5 rounded-full bg-white shadow transition-transform " +
+            (on ? "translate-x-4" : "translate-x-0")
+          }
+        />
+      </button>
     </div>
   );
 }

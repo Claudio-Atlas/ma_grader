@@ -43,7 +43,10 @@ def _check_j25_years(ws_formulas, payoff_month, excel_row, value_ok=False):
         }
     return {
         "points": 0,
-        "comment": "J25 incorrect. Expected the payoff month ÷ 12 (e.g. =A{row}/12 or =A{row}/C15).",
+        "comment": (
+            f"Years to pay off (J25) should divide your payoff month by 12, using the month "
+            f"in the row where your balance reaches $0: =A{excel_row}/12."
+        ),
     }
 
 
@@ -68,7 +71,10 @@ def _check_j26_total_paid(ws_formulas, excel_row, value_ok=False):
 
     return {
         "points": 0,
-        "comment": "J26 incorrect. Expected =SUM(C25:C{payoff row}).",
+        "comment": (
+            f"Total amount paid (J26) should add up every payment through your payoff "
+            f"row: =SUM(C25:C{excel_row})."
+        ),
     }
 
 
@@ -92,7 +98,10 @@ def _check_j27_interest(ws_formulas, excel_row, value_ok=False):
 
     return {
         "points": 0,
-        "comment": "J27 incorrect. Expected =J26-B25 (or =J26-C14) or =SUM(E25:E{payoff row}).",
+        "comment": (
+            f"Total interest paid (J27) should be your total paid minus the starting "
+            f"balance (=J26-B25), or the sum of the interest column (=SUM(E25:E{excel_row}))."
+        ),
     }
 
 
