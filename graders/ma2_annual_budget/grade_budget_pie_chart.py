@@ -145,7 +145,7 @@ def grade_budget_pie_chart(ws):
         pts += 1.0  # a pie chart exists, but the data is wrong
         found = f" (found column {val_col})" if val_col else ""
         notes.append(
-            f"Pie chart present, but its values should come from the Total Annual "
+            f"Your pie chart is there, but its slices should come from the Total Annual "
             f"Cost column (D){found}."
         )
 
@@ -171,8 +171,8 @@ def grade_budget_pie_chart(ws):
     if not data_is_correct and pts > 2.0:
         pts = 2.0
         notes.append(
-            "Because the chart isn't plotting the Total Annual Cost data, its score "
-            "is capped at 2 of 6."
+            "Because the chart isn't plotting the Total Annual Cost data, it can only "
+            "earn partial credit, even with a good title and labels."
         )
 
     if not notes:
@@ -181,4 +181,4 @@ def grade_budget_pie_chart(ws):
             "an updated title, and percentage labels."
         )
 
-    return {"total_points": round(pts, 2), "comment": " ".join(notes)}
+    return {"total_points": round(pts, 2), "comment": " | ".join(notes)}

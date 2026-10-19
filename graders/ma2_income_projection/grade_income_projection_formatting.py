@@ -1,3 +1,11 @@
+from utilities.student_feedback import format_issue
+
+LABELS = {
+    "H19": "slope", "H20": "intercept", "K33": "projected CPI", "K34": "inflation rate",
+    "K35": "current income", "K36": "5-year income projection", "K37": "projected monthly income",
+}
+
+
 def grade_income_projection_formatting(ws):
     """
     Checks formatting for key cells on the Income and Projection tab.
@@ -33,14 +41,14 @@ def grade_income_projection_formatting(ws):
                     total_points += weight
                     details.append(f"{cell_ref}: ✅ Number format with 3 decimals.")
                 else:
-                    details.append(f"{cell_ref}: ❌ Expected number format with 3 decimals (found '{fmt}').")
+                    details.append(format_issue(cell_ref, "Number with 3 decimal places", fmt, LABELS[cell_ref]))
 
             elif fmt_type == "percent":
                 if "%" in fmt and ("0.00" in fmt or "0.0%" in fmt):
                     total_points += weight
                     details.append(f"{cell_ref}: ✅ Percentage format with 2 decimals.")
                 else:
-                    details.append(f"{cell_ref}: ❌ Expected percentage format with 2 decimals (found '{fmt}').")
+                    details.append(format_issue(cell_ref, "percent with two decimals", fmt, LABELS[cell_ref]))
 
             elif fmt_type == "currency":
                 if "$" in fmt or "[$" in fmt or "₤" in fmt or "€" in fmt:
@@ -48,12 +56,13 @@ def grade_income_projection_formatting(ws):
                         total_points += weight
                         details.append(f"{cell_ref}: ✅ Currency format with 2 decimals.")
                     else:
-                        details.append(f"{cell_ref}: ❌ Currency missing 2 decimals (found '{fmt}').")
+                        details.append(format_issue(cell_ref, "currency with two decimals", fmt, LABELS[cell_ref]))
                 else:
-                    details.append(f"{cell_ref}: ❌ Expected currency format (found '{fmt}').")
+                    details.append(format_issue(cell_ref, "currency with two decimals", fmt, LABELS[cell_ref]))
 
         result["points"] = round(total_points, 2)
-        result["comment"] = f"Formatting check complete: {result['points']}/3 points."
+        # Only the problems; passing cells need no comment.
+        result["comment"] = " | ".join(d for d in details if "\u2705" not in d)
         result["details"] = details
 
     except Exception as e:

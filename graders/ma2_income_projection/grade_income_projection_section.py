@@ -25,11 +25,8 @@ def grade_income_projection_section(ws):
             "Monthly Income (K37)": monthly,
         }
 
-        result["comment"] = (
-            f"Income Projection Section → "
-            f"Current Income: {income_ref['points']}/1, 5-Year: {five_year['points']}/3, Monthly: {monthly['points']}/2 "
-            f"= Total {total_points}/6"
-        )
+        # Each part's own comment (the points column already shows the score).
+        result["comment"] = " | ".join(p["comment"] for p in (income_ref, five_year, monthly) if p.get("comment"))
 
     except Exception as e:
         result["points"] = 0

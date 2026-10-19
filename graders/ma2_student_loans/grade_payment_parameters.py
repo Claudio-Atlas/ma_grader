@@ -31,8 +31,9 @@ def grade_payment_parameters(student_file_path):
             entry["points"] = 1
             entry["comment"] = f"{cell} value correct ({student_val})."
         else:
+            label = {"B27": "payments per year", "B28": "number of years"}.get(cell, "value")
             entry["comment"] = (
-                f"{cell} value incorrect. Expected {expected}, found {student_val}."
+                f"Your {label} ({cell}) should be {expected}, but it's {student_val}."
             )
 
         total_points += entry["points"]

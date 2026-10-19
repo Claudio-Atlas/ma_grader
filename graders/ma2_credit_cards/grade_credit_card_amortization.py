@@ -32,6 +32,15 @@ COL_LABELS = {
 }
 
 
+# What each column's formula should look like (row 26 shown).
+EXPECTED = {
+    "B": "the previous row's balance after payment plus its interest, like =D25+E25",
+    "C": "the smaller of the balance and the minimum payment, like =MIN(B26,MAX($C$18,$C$17*B26))",
+    "D": "the balance minus the payment, like =B26-C26",
+    "E": "the balance after payment times the monthly rate, like =D26*($C$13/$C$15)",
+}
+
+
 def _norm(formula) -> str:
     if not isinstance(formula, str):
         return ""
@@ -149,9 +158,9 @@ def grade_credit_card_amortization(student_file_path):
     if payoff_row is None and expected_months and expected_months > n:
         n = expected_months
         comments.append(
-            f"The table stops at row {last} (month {len(rows)}) before the balance "
-            f"reaches 0 — it should run to month {expected_months} "
-            f"(row {START_ROW + expected_months - 1}). Missing rows count as incorrect."
+            f"Your table stops at row {last} (month {len(rows)}) before the balance reaches $0. "
+            f"Fill the formulas down until it's paid off, in month {expected_months} "
+            f"(row {START_ROW + expected_months - 1})."
         )
 
     correct = {c: 0 for c in "BCDE"}
@@ -173,12 +182,13 @@ def grade_credit_card_amortization(student_file_path):
         if correct[col] == n:
             comments.append(f"{COL_LABELS[col]} column ({col}): all {n} rows correct — {pts}/6.")
         else:
-            sample = ", ".join(bad[col][:4]) + (" …" if len(bad[col]) > 4 else "")
-            if not sample:
-                sample = "rows missing past the end of the table"
+            if not bad[col]:
+                continue  # only short because the table stops early (said above)
+            first = bad[col][0]
+            more = f" and {len(bad[col]) - 1} more" if len(bad[col]) > 1 else ""
             comments.append(
-                f"{COL_LABELS[col]} column ({col}): {correct[col]}/{n} rows follow the "
-                f"correct formula — {pts}/6. First issues: {sample}."
+                f"Your {COL_LABELS[col]} column needs a fix starting at {first}{more}. "
+                f"Each row should be {EXPECTED[col]}, filled down the column."
             )
 
     total = round(total, 2)
@@ -199,7 +209,7 @@ def grade_credit_card_amortization(student_file_path):
 
     return {
         "total_points": total,
-        "comment": " ".join(comments),
+        "comment": " | ".join(comments),
         "column_points": column_points,
         "payoff_row": {"payoff_month": payoff_month, "excel_row": payoff_row, "last_row": last},
     }

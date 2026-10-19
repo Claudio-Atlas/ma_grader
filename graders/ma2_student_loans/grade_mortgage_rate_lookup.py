@@ -57,7 +57,7 @@ def grade_mortgage_rate_lookup(ws, mortgage_ws=None):
         student_val = b14.value
 
         if year_cell is None or month_cell is None or student_val is None:
-            result["comment"] = "Missing year (B12), month (B13), or mortgage rate (B14)."
+            result["comment"] = "Your interest rate lookup is incomplete. Fill in the year (B12), month (B13) and the rate from the Mortgage Rates tab (B14)."
             return {"B14": result, "total_points": 0}
 
         year = int(year_cell)
@@ -71,7 +71,7 @@ def grade_mortgage_rate_lookup(ws, mortgage_ws=None):
 
         if ref_val is None:
             result["comment"] = (
-                f"No reference rate found for {month}/{year} (check the Mortgage Rates tab)."
+                f"[MANUAL REVIEW] No reference rate found for {month}/{year}. Check B14 against the Mortgage Rates tab by hand."
             )
             return {"B14": result, "total_points": 0}
 
@@ -79,7 +79,7 @@ def grade_mortgage_rate_lookup(ws, mortgage_ws=None):
         try:
             student_num = float(student_val)
         except (TypeError, ValueError):
-            result["comment"] = "Mortgage rate (B14) must be numeric."
+            result["comment"] = "Your interest rate (B14) should be a number, like 7.44%."
             return {"B14": result, "total_points": 0}
 
         is_percent_formatted = "%" in str(b14.number_format)
@@ -100,8 +100,8 @@ def grade_mortgage_rate_lookup(ws, mortgage_ws=None):
             )
         else:
             result["comment"] = (
-                f"Incorrect mortgage rate. Expected ≈ {ref_val:.2f}%, "
-                f"your entry reads as {student_percent:.2f}%."
+                f"Your interest rate (B14) reads as {student_percent:.2f}%, but the Mortgage Rates tab "
+                f"shows {ref_val:.2f}% for {month}/{year}. Double-check the row and column you used."
             )
 
     except Exception as e:

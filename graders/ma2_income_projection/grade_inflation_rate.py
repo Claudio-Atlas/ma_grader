@@ -16,7 +16,7 @@ def grade_inflation_rate(ws):
 
     # Must be a formula
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "K34 does not contain a formula."
+        result["comment"] = "Your inflation rate (K34) isn't a formula yet. Compare projected to current CPI: =K33/C37-1."
         return result
 
     # Use the equivalence engine as the authority: it respects parentheses and
@@ -29,8 +29,8 @@ def grade_inflation_rate(ws):
         result["comment"] = "Inflation Rate formula is correct."
     else:
         result["comment"] = (
-            "Incorrect Inflation Rate formula. Expected =K33/C37-1 or =(K33-C37)/C37. "
-            "Note: =K33-C37/C37 (without parentheses) computes K33-1, which is wrong."
+            "Your inflation rate (K34) should be the percent change from current to projected CPI: "
+            "=(K33-C37)/C37 or =K33/C37-1. Watch the parentheses: =K33-C37/C37 divides first."
         )
 
     return result

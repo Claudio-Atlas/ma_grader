@@ -43,7 +43,7 @@ def grade_budget_row26(ws):
     if b26 == 12:
         total_points += 1
     else:
-        comments.append("B26 must be the number 12.")
+        comments.append("The frequency for your subsidized loan payment (B26) should be 12, one payment a month.")
 
     # -----------------------------
     # C26 — ='Student Loan'!B29
@@ -57,9 +57,9 @@ def grade_budget_row26(ws):
         if ("studentloan" in f or "studentloans" in f) and "b29" in f:
             total_points += 2
         else:
-            comments.append("C26 must reference 'Student Loan'!B29.")
+            comments.append("The subsidized loan cost (C26) should pull the payment straight from the Student Loans tab: ='Student Loan'!B29.")
     else:
-        comments.append("C26 must contain a formula referencing 'Student Loan'!B29.")
+        comments.append("The subsidized loan cost (C26) is typed in. Make it a formula that points at the Student Loans tab, ='Student Loan'!B29, so it updates automatically.")
 
     # -----------------------------
     # D26 — Annual cost = B26*C26
@@ -73,9 +73,9 @@ def grade_budget_row26(ws):
                 formulas_equivalent(d26, "=B26*C26"):
             total_points += 2
         else:
-            comments.append("D26 must multiply B26 and C26.")
+            comments.append("The Total Annual Cost for your subsidized loan (D26) should multiply the frequency by the cost: =B26*C26.")
     else:
-        comments.append("D26 must be a formula multiplying B26*C26.")
+        comments.append("The Total Annual Cost for your subsidized loan (D26) needs a formula: =B26*C26.")
 
     # -----------------------------
     # Final package

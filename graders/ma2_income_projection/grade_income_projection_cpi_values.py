@@ -34,12 +34,17 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         # ----------------------- 1) Month numbers -----------------------
         base_month = as_int(num(f"A{start_row}"))
         all_months = [as_int(num(f"A{r}")) for r in range(start_row, end_row + 1)]
+        issues = []  # student-facing problems, in the order they appear on the sheet
         if all(m == base_month for m in all_months if m is not None):
             month_points = 2
             result["details"].append(f"All month numbers match ({base_month}).")
         else:
             month_points = 0
             result["details"].append("Month numbers in column A are not consistent.")
+            issues.append(
+                "The month numbers in your CPI table (A30:A37) should all be the same "
+                "starting month, so every row looks up the same month in a different year."
+            )
 
         # ----------------------- 2) Year increment ----------------------
         base_year = as_int(num(f"B{start_row}"))
@@ -52,6 +57,10 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
             year_points = 0
             result["details"].append(
                 f"Year sequence incorrect. Expected {expected_years}, got {actual_years}"
+            )
+            issues.append(
+                "The years in your CPI table (B30:B37) should go up by one each row from your "
+                "starting year. A formula like =B30+1 filled down keeps them in order."
             )
 
         # ----------------------- 3) CPI values ---------------------------
@@ -81,6 +90,7 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
             if not (year and month_num and cpi_value):
                 result["details"].append(f"Row {r}: missing data.")
                 missing_rows += 1
+                issues.append(f"Row {r} of your CPI table is missing its CPI value (C{r}).")
                 continue
 
             try:
@@ -91,6 +101,7 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
             except (TypeError, ValueError):
                 result["details"].append(f"Row {r}: could not read year/month/CPI.")
                 missing_rows += 1
+                issues.append(f"Row {r} of your CPI table has a year, month or CPI (A{r}:C{r}) that isn't a plain number.")
                 continue
 
             try:
@@ -112,6 +123,10 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
                 result["details"].append(
                     f"Row {r}: CPI mismatch (expected {expected_cpi:.3f}, got {student_cpi:.3f})."
                 )
+                issues.append(
+                    f"The CPI for {month_name} {year} (C{r}) is {student_cpi:.3f}, but the reference "
+                    f"CPI data gives {expected_cpi:.3f}. Double-check that lookup."
+                )
 
         # Score over every row except those whose reference CPI is unavailable
         # (blank/unreadable rows count as wrong). Benefit of the doubt only when
@@ -124,13 +139,11 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
 
         total_points = month_points + year_points + cpi_points
         result["points"] = total_points
-        comment = (
-            f"Months check: {month_points}/2, Years check: {year_points}/2, "
-            f"CPI values: {cpi_points}/2 → Total {total_points}/6"
-        )
+        # Problems only; the points column already shows the score.
+        comment = " | ".join(issues)
         if unavailable:
             comment += (
-                f" | [MANUAL REVIEW] {len(unavailable)} CPI value(s) couldn't be "
+                f"{' | ' if comment else ''}[MANUAL REVIEW] {len(unavailable)} CPI value(s) couldn't be "
                 f"auto-checked ({', '.join(unavailable)}) — not counted against the student."
             )
         result["comment"] = comment

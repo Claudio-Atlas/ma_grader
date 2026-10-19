@@ -61,6 +61,14 @@ def grade_credit_card_formatting(student_file_path):
         "C40": {"type": "currency", "decimals": 2},
     }
 
+    labels = {
+        "C13": "APR", "C14": "starting balance", "C17": "minimum payment percentage",
+        "C18": "fixed minimum payment", "J25": "years to pay off", "J26": "total amount paid",
+        "J27": "total interest paid", "C40": "payment column",
+    }
+    wants = {"currency": "Currency with 2 decimal places", "percent": "Percentage with 2 decimal places",
+             "number": "Number with 2 decimal places"}
+
     results = {}
     total_points = 0
 
@@ -100,7 +108,10 @@ def grade_credit_card_formatting(student_file_path):
             entry["points"] = 0.5
             entry["comment"] = f"{cell} formatting correct."
         else:
-            entry["comment"] = entry["comment"].strip()
+            entry["comment"] = (
+                f"Your {labels.get(cell, 'cell')} ({cell}) should be formatted as "
+                f"{wants[rule['type']]} (Home \u2192 Number Format)."
+            )
 
         total_points += entry["points"]
         results[cell] = entry
@@ -108,6 +119,6 @@ def grade_credit_card_formatting(student_file_path):
     wb.close()
 
     results["total_points"] = total_points
-    results["comment"] = " | ".join([f"{c}: {r['comment']}" for c, r in results.items() if c in checks])
+    results["comment"] = " | ".join([r["comment"] for c, r in results.items() if c in checks])
 
     return results

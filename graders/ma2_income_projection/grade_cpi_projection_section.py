@@ -25,11 +25,8 @@ def grade_cpi_projection_section(ws):
             "Inflation Rate (K34)": infl,
         }
 
-        result["comment"] = (
-            f"CPI Projection Section → "
-            f"Year: {year['points']}/1, CPI: {cpi['points']}/3, Inflation: {infl['points']}/2 "
-            f"= Total {total_points}/6"
-        )
+        # Each part's own comment (the points column already shows the score).
+        result["comment"] = " | ".join(p["comment"] for p in (year, cpi, infl) if p.get("comment"))
 
     except Exception as e:
         result["points"] = 0

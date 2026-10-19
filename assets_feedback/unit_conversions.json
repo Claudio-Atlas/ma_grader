@@ -1,63 +1,69 @@
 {
-  "UC26_UNIT_VALID_G": "The unit in {cell} is correctly labeled as {unit}.",
-  "UC26_UNIT_VALID_J": "The unit in {cell} is correctly labeled as {unit}.",
-  "UC26_UNIT_INVALID_G": "The unit entered in {cell} is not valid for this conversion. The expected unit should be one of the following: {expected}.",
-  "UC26_UNIT_INVALID_J": "The unit entered in {cell} is not valid for this conversion. The expected unit should be one of the following: {expected}.",
+  "UC26_UNIT_VALID_G": "Your unit label in {cell} is correct.",
+  "UC26_UNIT_VALID_J": "Your unit label in {cell} is correct.",
+  "UC26_UNIT_INVALID_G": "Your unit label in {cell} isn't one of this row's ratios. It should be mcg/mg or ml/tsp, matching the ratio in F26.",
+  "UC26_UNIT_INVALID_J": "Your unit label in {cell} isn't one of this row's ratios. It should be mcg/mg or ml/tsp, matching the ratio in I26.",
 
-  "UC26_FORMULA_F_VALID": "The formula in {cell} correctly uses the {ratio} conversion ratio.",
-  "UC26_FORMULA_I_VALID": "The formula in {cell} correctly uses the {ratio} conversion ratio.",
-  "UC26_FORMULA_F_INVALID": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
-  "UC26_FORMULA_I_INVALID": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+  "UC26_FORMULA_F_VALID": "Your conversion ratio in {cell} is correct.",
+  "UC26_FORMULA_I_VALID": "Your conversion ratio in {cell} is correct.",
+  "UC26_FORMULA_F_INVALID": "Your conversion ratio in {cell} isn't one this row needs. It should be a formula that pulls the mcg/mg or ml/tsp ratio from the conversion table, using each ratio only once.",
+  "UC26_FORMULA_I_INVALID": "Your conversion ratio in {cell} isn't one this row needs. It should be a formula that pulls the mcg/mg or ml/tsp ratio from the conversion table, using each ratio only once.",
 
-  "UC26_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C26, F26, and I26.",
-  "UC26_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+  "UC26_FINAL_FORMULA_CORRECT": "Your final answer formula in {cell} is correct.",
+  "UC26_FINAL_FORMULA_INCORRECT": "Your final answer in {cell} should multiply the starting value by both ratios: =C26*F26*I26.",
+  "UC26_FINAL_FORMULA_PARTIAL": "Your final answer in {cell} multiplies the ratios but uses a typed-in starting value. Use C26 instead, =C26*F26*I26, so it updates automatically.",
 
-  "UC26_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
-  "UC26_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
-
-
-  "UC27_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
-  "UC27_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
-
-  "UC27_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
-  "UC27_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
-
-  "UC27_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C27, F27, and I27.",
-  "UC27_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
-
-  "UC27_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
-  "UC27_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+  "UC26_FINAL_UNIT_CORRECT": "Your final unit in {cell} is correct.",
+  "UC26_FINAL_UNIT_INCORRECT": "Your final unit in {cell} should be {expected}, the unit left after the ratios cancel.",
 
 
-  "UC28_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
-  "UC28_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
+  "UC27_UNIT_CORRECT": "Your unit label in {cell} is correct.",
+  "UC27_UNIT_INCORRECT": "Your unit label in {cell} isn't one of this row's ratios. It should be gal/l or h/d, matching the ratio next to it.",
 
-  "UC28_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
-  "UC28_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
+  "UC27_FORMULA_CORRECT": "Your conversion ratio in {cell} is correct.",
+  "UC27_FORMULA_INCORRECT": "Your conversion ratio in {cell} isn't one this row needs. It should be a formula that pulls the gal/l or h/d ratio from the conversion table.",
 
-  "UC28_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C28, F28, I28, and L28.",
-  "UC28_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
+  "UC27_FINAL_FORMULA_CORRECT": "Your final answer formula in {cell} is correct.",
+  "UC27_FINAL_FORMULA_INCORRECT": "Your final answer in {cell} should multiply the starting value by both ratios: =C27*F27*I27.",
+  "UC27_FINAL_FORMULA_PARTIAL": "Your final answer in {cell} multiplies the ratios but uses a typed-in starting value. Use C27 instead, =C27*F27*I27, so it updates automatically.",
 
-  "UC28_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
-  "UC28_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
-
-
-  "UC29_UNIT_CORRECT": "The unit in {cell} is correctly labeled as {unit}.",
-  "UC29_UNIT_INCORRECT": "The unit entered in {cell} is not valid for this conversion. Expected one of the following units: {expected}.",
-
-  "UC29_FORMULA_CORRECT": "The formula in {cell} correctly applies the {ratio} conversion ratio.",
-  "UC29_FORMULA_INCORRECT": "The formula in {cell} is not valid for this conversion. Please review the correct ratio formulas for this row.",
-
-  "UC29_FINAL_FORMULA_CORRECT": "The final quantity formula in {cell} correctly multiplies C29, F29, I29, and L29.",
-  "UC29_FINAL_FORMULA_INCORRECT": "The final quantity formula in {cell} is incorrect. It must reference and multiply all of the following cells: {required}.",
-
-  "UC29_FINAL_UNIT_CORRECT": "The final unit in {cell} is correctly labeled as {unit}.",
-  "UC29_FINAL_UNIT_INCORRECT": "The unit entered in {cell} is incorrect. The expected final unit for this row is {expected}.",
+  "UC27_FINAL_UNIT_CORRECT": "Your final unit in {cell} is correct.",
+  "UC27_FINAL_UNIT_INCORRECT": "Your final unit in {cell} should be {expected}, the unit left after the ratios cancel.",
 
 
-  "UC_TEMP_C40_CORRECT": "The formula in {cell} correctly converts Fahrenheit to Celsius using the required (5/9)*(A40-32) structure.",
-  "UC_TEMP_C40_INCORRECT": "The formula in {cell} is incorrect. A valid Celsius conversion must include all of the following components: {required}.",
+  "UC28_UNIT_CORRECT": "Your unit label in {cell} is correct.",
+  "UC28_UNIT_INCORRECT": "Your unit label in {cell} isn't one of this row's ratios. It should be kg/lb or in/cm, matching the ratio next to it.",
 
-  "UC_TEMP_A41_CORRECT": "The formula in {cell} correctly converts Celsius back to Fahrenheit using the required (9/5)*C41 + 32 structure.",
-  "UC_TEMP_A41_INCORRECT": "The formula in {cell} is incorrect. A valid Fahrenheit conversion must include all of the following components: {required}."
+  "UC28_FORMULA_CORRECT": "Your conversion ratio in {cell} is correct.",
+  "UC28_FORMULA_INCORRECT": "Your conversion ratio in {cell} isn't one this row needs. It should be a formula that pulls the kg/lb or in/cm ratio from the conversion table.",
+
+  "UC28_FINAL_FORMULA_CORRECT": "Your final answer formula in {cell} is correct.",
+  "UC28_FINAL_FORMULA_INCORRECT": "Your final answer in {cell} should multiply the starting value by all three ratios: =C28*F28*I28*L28.",
+  "UC28_FINAL_FORMULA_PARTIAL": "Your final answer in {cell} multiplies the ratios but uses a typed-in starting value. Use C28 instead, =C28*F28*I28*L28, so it updates automatically.",
+
+  "UC28_FINAL_UNIT_CORRECT": "Your final unit in {cell} is correct.",
+  "UC28_FINAL_UNIT_INCORRECT": "Your final unit in {cell} should be {expected}, the unit left after the ratios cancel.",
+
+
+  "UC29_UNIT_CORRECT": "Your unit label in {cell} is correct.",
+  "UC29_UNIT_INCORRECT": "Your unit label in {cell} isn't one of this row's ratios. It should be ft/mi, yr/d, or d/h, matching the ratio next to it.",
+
+  "UC29_FORMULA_CORRECT": "Your conversion ratio in {cell} is correct.",
+  "UC29_FORMULA_INCORRECT": "Your conversion ratio in {cell} isn't one this row needs. It should be a formula that pulls the ft/mi, yr/d, or d/h ratio from the conversion table, using each ratio only once.",
+
+  "UC29_FINAL_FORMULA_CORRECT": "Your final answer formula in {cell} is correct.",
+  "UC29_FINAL_FORMULA_INCORRECT": "Your final answer in {cell} should multiply the starting value by all three ratios: =C29*F29*I29*L29.",
+  "UC29_FINAL_FORMULA_PARTIAL": "Your final answer in {cell} multiplies the ratios but uses a typed-in starting value. Use C29 instead, =C29*F29*I29*L29, so it updates automatically.",
+
+  "UC29_FINAL_UNIT_CORRECT": "Your final unit in {cell} is correct.",
+  "UC29_FINAL_UNIT_INCORRECT": "Your final unit in {cell} should be {expected}, the unit left after the ratios cancel.",
+
+
+  "UC_TEMP_C40_CORRECT": "Your Fahrenheit-to-Celsius formula in {cell} is correct.",
+  "UC_TEMP_C40_INCORRECT": "Your Fahrenheit-to-Celsius conversion ({cell}) should subtract 32 from A40, then multiply by 5/9: =(5/9)*(A40-32).",
+  "UC_TEMP_C40_PARTIAL": "Your Fahrenheit-to-Celsius conversion ({cell}) has the right math but uses a typed-in temperature. Point it at A40 instead: =(5/9)*(A40-32).",
+
+  "UC_TEMP_A41_CORRECT": "Your Celsius-to-Fahrenheit formula in {cell} is correct.",
+  "UC_TEMP_A41_INCORRECT": "Your Celsius-to-Fahrenheit conversion ({cell}) should multiply C41 by 9/5, then add 32: =(9/5)*C41+32.",
+  "UC_TEMP_A41_PARTIAL": "Your Celsius-to-Fahrenheit conversion ({cell}) has the right math but uses a typed-in temperature. Point it at C41 instead: =(9/5)*C41+32."
 }

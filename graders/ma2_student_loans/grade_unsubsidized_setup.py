@@ -23,7 +23,7 @@ def _check_c24_constant(ws):
         result["points"] = 1
         result["comment"] = "C24 correctly entered as 4 years in school."
     else:
-        result["comment"] = f"C24 incorrect; expected constant 4, found {val}."
+        result["comment"] = f"Your years in school (C24) should be 4, but it's {val}."
     return result
 
 
@@ -33,7 +33,7 @@ def _check_c25_interest_formula(ws):
     formula = ws["C25"].value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "C25 missing formula for simple interest (I=P*r*t)."
+        result["comment"] = "Your additional interest (C25) needs a simple-interest formula, I = P x r x t: =B22*B23*C24."
         return result
 
     f = normalize_formula(formula)
@@ -55,7 +55,7 @@ def _check_c25_interest_formula(ws):
         result["comment"] = "C25 simple interest formula is correct."
     else:
         result["comment"] = (
-            "C25 formula incorrect. Expected I = B22*B23*C24 or any order of those references."
+            "Your additional interest (C25) should be simple interest on the loan while in school: =B22*B23*C24."
         )
 
     return result
@@ -67,7 +67,7 @@ def _check_c26_new_principal(ws):
     formula = ws["C26"].value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "C26 missing formula for new principal (P + I)."
+        result["comment"] = "Your new principal (C26) needs a formula: the original loan plus the added interest, =B22+C25."
         return result
 
     f = normalize_formula(formula)
@@ -87,8 +87,7 @@ def _check_c26_new_principal(ws):
         result["comment"] = "C26 new principal formula is correct."
     else:
         result["comment"] = (
-            "C26 formula incorrect. Expected =B22+C25, =C25+B22, "
-            "or equivalent like =B22*(1+B23*C24)."
+            "Your new principal (C26) should be the original loan plus the added interest: =B22+C25."
         )
 
     return result
@@ -113,7 +112,7 @@ def grade_unsubsidized_setup(ws):
 
     results["total_points"] = total
     results["comment"] = (
-        f"C24: {c24['comment']} | C25: {c25['comment']} | C26: {c26['comment']}"
+        f"{c24['comment']} | {c25['comment']} | {c26['comment']}"
     )
 
     return results

@@ -18,7 +18,7 @@ def grade_projected_cpi(ws):
 
     # Must be a formula
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "K33 does not contain a formula."
+        result["comment"] = "Your projected CPI (K33) isn't a formula yet. Use your trendline: =H19*K32+H20."
         return result
 
     # --- Normalize formula ---
@@ -44,8 +44,8 @@ def grade_projected_cpi(ws):
         result["comment"] = "Projected CPI formula is correct."
     else:
         result["comment"] = (
-            "Incorrect Projected CPI formula. Expected one of the valid forms: "
-            "=H19*K32+H20, =K32*H19+H20, =H20+H19*K32, or =H20+K32*H19."
+            "Your projected CPI (K33) should plug the projection year into your trendline: "
+            "slope times year plus intercept, =H19*K32+H20."
         )
 
     return result

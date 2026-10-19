@@ -18,7 +18,7 @@ def grade_five_year_income(ws):
 
     # Must be a formula
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "K36 does not contain a formula."
+        result["comment"] = "Your 5-year income projection (K36) isn't a formula yet. Grow your income by the inflation rate: =K35*(1+K34)."
         return result
 
     # --- Normalize but keep parentheses ---
@@ -44,8 +44,8 @@ def grade_five_year_income(ws):
         result["comment"] = "Projected 5-year income formula is correct."
     else:
         result["comment"] = (
-            "Incorrect 5-year income formula. Expected =K35*(1+K34) "
-            "(or =B11*(1+K34)) or an equivalent form."
+            "Your 5-year income projection (K36) should grow your current income by the "
+            "inflation rate: =K35*(1+K34)."
         )
 
     return result

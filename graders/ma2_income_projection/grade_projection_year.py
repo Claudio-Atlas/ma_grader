@@ -18,13 +18,13 @@ def grade_projection_year(ws):
                 result["points"] = 1
                 result["comment"] = "Projection year formula (=B37+5) is correct."
             else:
-                result["comment"] = "Projection year formula should be =B37+5 (five years after the final CPI year)."
+                result["comment"] = "Your projection year (K32) should be five years after your last CPI year: =B37+5."
             return result
 
         # --- Case 2: a typed number — must equal B37 + 5 ---
         last_cpi_year = ws["B37"].value
         if not (isinstance(last_cpi_year, (int, float)) and isinstance(raw, (int, float))):
-            result["comment"] = "Missing or invalid year values in B37 or K32."
+            result["comment"] = "Your projection year (K32) is missing. Enter =B37+5, five years after your last CPI year."
             return result
 
         expected_year = int(last_cpi_year) + 5
@@ -35,7 +35,8 @@ def grade_projection_year(ws):
             )
         else:
             result["comment"] = (
-                f"Projection year should be 5 years after final CPI year ({int(last_cpi_year)} → {expected_year})."
+                f"Your projection year (K32) should be {expected_year}, five years after your last CPI "
+                f"year ({int(last_cpi_year)}). Use a formula, =B37+5, so it stays in sync."
             )
 
     except Exception as e:

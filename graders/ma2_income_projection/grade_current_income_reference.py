@@ -27,7 +27,7 @@ def grade_current_income_reference(ws):
             result["comment"] = "Correctly references current income (B11)."
             return result
         else:
-            result["comment"] = "Incorrect reference; should directly reference B11."
+            result["comment"] = "Your current income (K35) should point straight at your income in B11: =B11."
             return result
 
     # --- Case 2: Hard-coded numeric value (partial credit) ---
@@ -35,9 +35,9 @@ def grade_current_income_reference(ws):
         current_income = ws["B11"].value
         if isinstance(formula, (int, float)) and round(formula, 2) == round(current_income, 2):
             result["points"] = 0.5
-            result["comment"] = "Hard-coded current income value instead of referencing B11."
+            result["comment"] = "Your current income (K35) is typed in instead of referencing B11. Use =B11 so it updates if B11 changes."
         else:
-            result["comment"] = "Incorrect or missing reference to current income."
+            result["comment"] = "Your current income (K35) is missing. Enter =B11 to bring it forward."
     except Exception as e:
         result["comment"] = f"Error grading current income reference: {e}"
 

@@ -40,7 +40,7 @@ def grade_budget_formatting(ws):
             if is_currency_two_decimals(fmt):
                 entry["points"] = 2
             else:
-                entry["comment"] = f"{cell_ref} must be formatted as currency with two decimals."
+                entry["comment"] = f"Cell {cell_ref} should be formatted as Currency with 2 decimal places (Home \u2192 Number Format)."
                 comments.append(entry["comment"])
         except Exception:
             entry["comment"] = f"Could not read formatting for {cell_ref}."

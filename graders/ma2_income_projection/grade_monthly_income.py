@@ -16,7 +16,7 @@ def grade_monthly_income(ws):
 
     # Must be a formula
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "K37 does not contain a formula."
+        result["comment"] = "Your projected monthly income (K37) isn't a formula yet. Divide the yearly amount by 12: =K36/12."
         return result
 
     # --- Normalize ---
@@ -40,7 +40,7 @@ def grade_monthly_income(ws):
         result["comment"] = "Projected monthly income formula is correct."
     else:
         result["comment"] = (
-            "Incorrect monthly income formula. Expected =K36/12 or =K36*(1/12)."
+            "Your projected monthly income (K37) should divide your 5-year yearly income by 12: =K36/12."
         )
 
     return result

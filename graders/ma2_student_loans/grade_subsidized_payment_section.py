@@ -35,28 +35,28 @@ def _check_b29_pmt_formula(ws_formulas, ws_values):
     formula = ws_formulas["B29"].value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "B29 must contain a formula for monthly payment (no PMT function)."
+        result["comment"] = "Your subsidized monthly payment (B29) needs a formula. Build it from the loan payment formula in the instructions (PMT isn't allowed)."
         return result
 
     f = normalize_formula(formula)
 
     if "pmt(" in f:
-        result["comment"] = "B29 uses the built-in PMT function, which is not allowed."
+        result["comment"] = "Your subsidized monthly payment (B29) uses PMT, which this assignment doesn't allow. Use the loan payment formula from the instructions instead."
         return result
 
     required_refs = ["b22", "b27", "b28"]
     missing = [r for r in required_refs if r not in f]
     if missing:
-        result["comment"] = f"B29 formula missing required references: {', '.join(missing)}."
+        result["comment"] = f"Your subsidized monthly payment (B29) should use the loan amount, rate, payments per year and years. It's missing {', '.join(missing)}."
         return result
 
     # The interest rate lives in both B23 and B14, so either reference is valid.
     if "b23" not in f and "b14" not in f:
-        result["comment"] = "B29 formula must reference the interest rate (B23 or B14)."
+        result["comment"] = "Your subsidized monthly payment (B29) needs to use the interest rate (B23)."
         return result
 
     if "/" not in f or "^-" not in f:
-        result["comment"] = "B29 formula missing division or negative exponent structure."
+        result["comment"] = "Your subsidized monthly payment (B29) isn't quite the loan payment formula. Check the division and the negative exponent against the instructions."
         return result
 
     points = 3
@@ -70,16 +70,17 @@ def _check_b29_pmt_formula(ws_formulas, ws_values):
         student_val = ws_values["B29"].value
 
         if None in (P, r, n, t, student_val):
-            comments.append("Could not verify numeric value — one or more inputs missing.")
+            comments.append("[MANUAL REVIEW] Payment value couldn't be checked automatically (an input has no saved value).")
         else:
             expected_val = compute_manual_pmt(P, r, n, t)
             if expected_val is not None and abs(student_val - expected_val) <= 0.05:
                 points += 1
                 comments.append(f"Calculated payment matches expected value ({expected_val:.2f}).")
             else:
-                comments.append(
-                    f"Value appears incorrect. Expected about {expected_val:.2f}, found {student_val:.2f}."
-                )
+                comments = [
+                    f"Your subsidized monthly payment (B29) works out to ${student_val:,.2f}, but it should be "
+                    f"about ${expected_val:,.2f}. Check the parentheses and exponent in your formula."
+                ]
     except Exception as e:
         comments.append(f"Error verifying computed value: {e}")
 
@@ -102,18 +103,18 @@ def _check_b30_total_paid(ws_formulas, ws_values):
     formula = ws_formulas["B30"].value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "B30 must contain a formula for total amount paid."
+        result["comment"] = "Your subsidized total paid (B30) needs a formula: payment x payments per year x years."
         return result
 
     f = normalize_formula(formula)
     required_refs = ["b29", "b27", "b28"]
     missing = [r for r in required_refs if r not in f]
     if missing:
-        result["comment"] = f"B30 formula missing required references: {', '.join(missing)}."
+        result["comment"] = f"Your subsidized total paid (B30) should multiply the payment, payments per year and years. It's missing {', '.join(missing)}."
         return result
 
     if "*" not in f:
-        result["comment"] = "B30 formula must multiply the payment, payments per year, and years."
+        result["comment"] = "Your subsidized total paid (B30) should multiply the payment, payments per year and years."
         return result
 
     points = 1
@@ -126,16 +127,17 @@ def _check_b30_total_paid(ws_formulas, ws_values):
         student_val = ws_values["B30"].value
 
         if None in (pmt, n, t, student_val):
-            comments.append("Could not verify numeric value — one or more inputs missing.")
+            comments.append("[MANUAL REVIEW] Total paid couldn't be checked automatically (an input has no saved value).")
         else:
             expected_val = pmt * n * t
             if abs(student_val - expected_val) <= 0.05:
                 points += 1
                 comments.append(f"Numeric result matches expected total ({expected_val:.2f}).")
             else:
-                comments.append(
-                    f"Incorrect total paid. Expected about {expected_val:.2f}, found {student_val:.2f}."
-                )
+                comments = [
+                    f"Your subsidized total paid (B30) works out to ${student_val:,.2f}, but it should be "
+                    f"about ${expected_val:,.2f}."
+                ]
     except Exception as e:
         comments.append(f"Error verifying numeric value: {e}")
 
@@ -157,7 +159,7 @@ def _check_b31_interest_paid(ws_formulas):
     formula = ws_formulas["B31"].value
 
     if not isinstance(formula, str) or not formula.startswith("="):
-        result["comment"] = "B31 must contain a formula for interest paid."
+        result["comment"] = "Your subsidized interest paid (B31) needs a formula: =B30-B22."
         return result
 
     f = formula.strip().lower().replace(" ", "").replace("$", "")
@@ -167,7 +169,7 @@ def _check_b31_interest_paid(ws_formulas):
         result["points"] = 2
         result["comment"] = "Interest paid formula is correct."
     else:
-        result["comment"] = "Incorrect interest formula. Expected =B30-B22."
+        result["comment"] = "Your subsidized interest paid (B31) should be the total paid minus the amount borrowed: =B30-B22."
 
     return result
 

@@ -37,11 +37,11 @@ def grade_budget_row30(ws):
             total_points = 3
         else:
             comments.append(
-                "D30 must be =D28*(1+D29) or an equivalent form "
-                "(note: raising to a power, e.g. ^5, is incorrect here)."
+                "Your Projected Total in 5 Years (D30) should grow the budget by the inflation "
+                "rate once: =D28*(1+D29). No exponent is needed here."
             )
     else:
-        comments.append("D30 must contain a formula multiplying D28 by (1 + D29).")
+        comments.append("Your Projected Total in 5 Years (D30) needs a formula: =D28*(1+D29).")
 
     return {
         "total_points": total_points,
@@ -67,9 +67,9 @@ def grade_budget_row32(ws):
         if f == "=d31-d30" or formulas_equivalent(val, "=D31-D30"):
             total_points = 2
         else:
-            comments.append("D32 must be =D31-D30.")
+            comments.append("Your Remaining Total (D32) should subtract your projected total (D30) from D31: =D31-D30.")
     else:
-        comments.append("D32 must contain a formula subtracting D30 from D31.")
+        comments.append("Your Remaining Total (D32) needs a formula: =D31-D30.")
 
     return {
         "total_points": total_points,

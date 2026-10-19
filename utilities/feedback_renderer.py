@@ -4,10 +4,10 @@ from utilities.json_loader import load_feedback
 
 
 def _sanitize(text):
-    """Remove non-ASCII characters to prevent Windows encoding errors."""
-    if not isinstance(text, str):
-        text = str(text)
-    return text.encode('ascii', errors='replace').decode('ascii')
+    """Coerce a param to text. (Non-ASCII used to be replaced with "?" to avoid
+    Windows console encoding errors, but this text goes into .xlsx cells, which
+    are Unicode, so "\u2014" and "\u2192" now survive.)"""
+    return text if isinstance(text, str) else str(text)
 
 
 def render_feedback(feedback_items, tab_name: str) -> str:

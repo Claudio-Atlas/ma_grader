@@ -44,7 +44,7 @@ def grade_budget_row27(ws):
     if b27 == 12:
         total_points += 1
     else:
-        comments.append("B27 must be the number 12.")
+        comments.append("The frequency for your credit card payment (B27) should be 12, one payment a month.")
 
     # -----------------------------
     # C27 — ='Credit Cards'!C25
@@ -58,9 +58,9 @@ def grade_budget_row27(ws):
         if ("creditcards" in f) and ("c25" in f):
             total_points += 2
         else:
-            comments.append("C27 must reference 'Credit Cards'!C25.")
+            comments.append("The credit card cost (C27) should pull the payment straight from the Credit Cards tab: ='Credit Cards'!C25.")
     else:
-        comments.append("C27 must contain a formula referencing 'Credit Cards'!C25.")
+        comments.append("The credit card cost (C27) is typed in. Make it a formula that points at the Credit Cards tab, ='Credit Cards'!C25, so it updates automatically.")
 
     # -----------------------------
     # D27 — Must multiply B27 and C27
@@ -74,9 +74,9 @@ def grade_budget_row27(ws):
                 formulas_equivalent(d27, "=B27*C27"):
             total_points += 2
         else:
-            comments.append("D27 must multiply B27 and C27.")
+            comments.append("The Total Annual Cost for your credit card (D27) should multiply the frequency by the cost: =B27*C27.")
     else:
-        comments.append("D27 must be a formula multiplying B27*C27.")
+        comments.append("The Total Annual Cost for your credit card (D27) needs a formula: =B27*C27.")
 
     # -----------------------------
     # Final output

@@ -19,12 +19,12 @@ def grade_income_projection_name(ws: Worksheet) -> dict:
 
         if not cell_value:
             result["points"] = 0
-            result["comment"] = "No name entered in cell C1."
+            result["comment"] = "Your name is missing. Type your full name in cell C1."
         elif len(cell_value) < 10:
             result["points"] = 0.5
             result["comment"] = (
-                f"Name '{cell_value}' is shorter than 10 characters; "
-                "students were instructed to pad with X’s."
+                f"Your name in C1 (\u201c{cell_value}\u201d) needs at least 10 characters. "
+                "If your name is shorter, pad it with X's as the instructions say."
             )
         else:
             result["points"] = 1

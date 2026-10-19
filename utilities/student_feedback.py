@@ -75,13 +75,34 @@ _FAIL_RE = re.compile(
 )
 
 
+_INSTRUCTOR_RE = re.compile(r"\[MANUAL[^\]]*\]|Instructor check", re.I)
+
+
+def split_instructor_notes(comment):
+    """Separate instructor-only notes ("[MANUAL REVIEW] ...", "Instructor check
+    ...") from the student comment. Returns (student_text, [notes])."""
+    if not comment or not isinstance(comment, str):
+        return comment, []
+    keep, notes = [], []
+    for part in re.split(r"\s*\|\s*|\n+", comment):
+        m = _INSTRUCTOR_RE.search(part)
+        if m:
+            before = part[:m.start()].strip()
+            if before:
+                keep.append(before)
+            notes.append(part[m.start():].strip())
+        elif part.strip():
+            keep.append(part.strip())
+    return " | ".join(keep), notes
+
+
 def legacy_issues(comment):
     if not comment or not isinstance(comment, str):
         return []
     parts = re.split(r"\s*\|\s*|\n+", comment)
     out = []
     for p in parts:
-        p = re.sub(r"^\s*\[(ok|x|~|MANUAL REVIEW)\]\s*", "", p.strip(), flags=re.I)
+        p = re.sub(r"^\s*\[(ok|x|~)\]\s*", "", p.strip(), flags=re.I)
         p = re.sub(r"^[A-Za-z ]+:\s*(?=[A-Z]\d)", "", p)  # "Slope: H19 ..." -> "H19 ..."
         if not p:
             continue

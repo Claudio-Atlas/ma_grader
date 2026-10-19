@@ -34,9 +34,9 @@ def grade_budget_row28(ws):
         if f.startswith("=sum") and "d18:d27" in f:
             total_points = 3
         else:
-            comments.append("D28 must contain =SUM(D18:D27).")
+            comments.append("Your Total Annual Budget (D28) should add every Total Annual Cost with SUM: =SUM(D18:D27).")
     else:
-        comments.append("D28 must be a formula using =SUM(D18:D27).")
+        comments.append("Your Total Annual Budget (D28) needs a formula: =SUM(D18:D27).")
 
     return {
         "total_points": total_points,

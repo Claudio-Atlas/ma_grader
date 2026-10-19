@@ -10,6 +10,7 @@ Author: Clayton Ragsdale
 import os
 from openpyxl import load_workbook
 from utilities.xl import load_workbook as load_student_workbook
+from utilities.humanize_sheet import humanize_grading_sheet
 from typing import Dict, Any, Optional
 
 from utilities.logger import get_logger
@@ -162,6 +163,15 @@ def phase1_grade_all_students_ma3(
             else:
                 logger.info(f"  Skipping Visualization (sheet missing)")
                 skipped_count += 1
+
+            # Rewrite comments in the student-facing voice + overall note.
+            try:
+                typed_name = None
+                if sheet_map.get("Analysis"):
+                    typed_name = student_wb[sheet_map["Analysis"]]["B10"].value
+                humanize_grading_sheet(ws_grading, "MA3", typed_name or student_name)
+            except Exception as e:
+                logger.warning(f"  Feedback rewrite skipped for {student_name}: {e}")
 
             grading_wb.save(grading_file)
             logger.info(f"  ✓ Graded: {student_name}")
