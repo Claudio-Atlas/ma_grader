@@ -331,6 +331,9 @@ def grade_one(
         # Copy the student's workbook into the shared submissions folder.
         submission_dest = os.path.join(submissions_path, submission_filename)
         shutil.copyfile(workbook_path, submission_dest)
+        from utilities.xl import repair_workbook_file
+        if repair_workbook_file(submission_dest):
+            logs.append("Repaired an unreadable style in the workbook (pasted web text)")
 
         # Copy a fresh grading sheet for this student (overwrites on re-grade).
         template_path = ws_path("templates", _grade_template_name(assignment_upper))

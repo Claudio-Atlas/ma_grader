@@ -6,6 +6,7 @@ import shutil
 
 from utilities.logger import get_logger
 from utilities.paths import ensure_dir, ws_path
+from utilities.xl import repair_workbook_file
 
 
 def _clean_name_parts_from_folder(folder_name: str):
@@ -143,6 +144,8 @@ def create_grading_sheets_from_folder(course_label: str, assignment_type: str = 
 
             # ---- Copy submission ----
             shutil.copyfile(original_submission, submission_dest)
+            if repair_workbook_file(submission_dest):
+                logger.info(f"Repaired an unreadable style in {readable_name}'s workbook")
 
             # ---- Copy grading template ----
             grading_dest = os.path.join(graded_output_path, grading_filename)

@@ -40,3 +40,58 @@ def load_workbook(*args, **kwargs):
     if not kwargs.get("data_only"):
         strip_future_prefixes(wb)
     return wb
+
+
+# ---------------------------------------------------------------------------
+# Repairing files openpyxl refuses to open
+# ---------------------------------------------------------------------------
+
+import os
+import shutil
+import tempfile
+import zipfile
+
+# openpyxl only accepts font families 0-14 (the OOXML spec range). Text pasted
+# into Excel from a web page brings fonts like "-Webkit-Standard" with family
+# 18; Excel opens the file fine but openpyxl rejects the whole workbook
+# ("could not read stylesheet"), so the student got "Invalid data format".
+# Font family is irrelevant to grading, so out-of-range values are dropped.
+_BAD_FAMILY_RE = re.compile(rb'<(?:\w+:)?family val="(?:1[5-9]|[2-9]\d|\d{3,})"\s*/>')
+
+
+def _can_open(path):
+    try:
+        _openpyxl_load(path, read_only=True).close()
+        return True
+    except Exception:
+        return False
+
+
+def repair_workbook_file(path):
+    """Fix known harmless quirks that stop openpyxl opening a student's .xlsx.
+
+    Works in place on the WORKSPACE copy (never the original download).
+    Returns True if the file was changed. Files that already open, or that
+    fail for some other reason, are left exactly as they were.
+    """
+    if _can_open(path):
+        return False
+    try:
+        with zipfile.ZipFile(path) as zin:
+            styles = zin.read("xl/styles.xml")
+            fixed = _BAD_FAMILY_RE.sub(b"", styles)
+            if fixed == styles:
+                return False
+            fd, tmp = tempfile.mkstemp(suffix=".xlsx", dir=os.path.dirname(path))
+            os.close(fd)
+            with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+                for item in zin.infolist():
+                    data = fixed if item.filename == "xl/styles.xml" else zin.read(item.filename)
+                    zout.writestr(item, data)
+    except (KeyError, zipfile.BadZipFile, OSError):
+        return False
+    if _can_open(tmp):
+        shutil.move(tmp, path)
+        return True
+    os.remove(tmp)
+    return False
