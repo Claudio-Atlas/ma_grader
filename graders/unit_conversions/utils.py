@@ -1,3 +1,4 @@
+import re
 """
 utils.py — Shared utility functions for Unit Conversions graders
 
@@ -115,3 +116,12 @@ def norm_temp_formula(val: Any) -> str:
         "5/9*(A40-32)"
     """
     return normalize_temp_formula(val)
+
+
+def has_typed_number(formula: str) -> bool:
+    """True if a (normalized) formula contains a typed-in number once its cell
+    references are removed, e.g. =18*F26*I26 -> True, =F26*I26 -> False."""
+    if not formula:
+        return False
+    without_refs = re.sub(r"[A-Z]{1,3}\d+", "", str(formula).upper())
+    return re.search(r"\d", without_refs) is not None

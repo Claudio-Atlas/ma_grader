@@ -175,6 +175,7 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
     missing_years_ref = 0
     not_formula = 0
     hardcoded_linear = 0  # Has y=mx+b structure but hardcoded values
+    wrong_cells = 0       # ...of those, ones that DO point at B30/B31, just not as slope*year+intercept
 
     # Check each prediction cell
     for row in range(19, 36):  # Rows 19-35 inclusive
@@ -223,6 +224,9 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
         elif not has_slope_intercept and has_years and has_linear_structure:
             # Has y=mx+b structure with years ref but hardcoded slope/intercept
             hardcoded_linear += 1
+            if re.search(r"B\$?3[01](?![0-9])", formula.upper().replace("$", "")):
+                # e.g. =B31*D19+B31: uses the cells, but the wrong one for the slope
+                wrong_cells += 1
         else:
             # Missing refs, or refs present but wrong structure (e.g. + instead of *)
             missing_slope_intercept += 1
@@ -238,8 +242,14 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
 
     # Check for hardcoded linear formulas (half credit case)
     # If ALL formulas have y=mx+b structure but hardcoded values, give 50% credit
+    # Same points either way; only the explanation differs.
+    hardcoded_code = (
+        "IA_PREDICTIONS_WRONG_CELLS" if hardcoded_linear and wrong_cells == hardcoded_linear
+        else "IA_PREDICTIONS_HARDCODED"
+    )
+
     if correct_count == 0 and hardcoded_linear == total_rows:
-        feedback.append(("IA_PREDICTIONS_HARDCODED", {
+        feedback.append((hardcoded_code, {
             "count": hardcoded_linear,
             "range": "E19:E35",
             "note": "Formulas have correct y=mx+b structure but use hardcoded slope/intercept values. Use B30 and B31 cell references for full credit."
@@ -251,7 +261,7 @@ def check_predictions(ws: Worksheet) -> Tuple[float, List[Tuple[str, Dict[str, A
         # All checked formulas are hardcoded (but maybe some weren't formulas at all)
         hardcoded_ratio = hardcoded_linear / total_rows
         score = round(3.0 * hardcoded_ratio, 1)  # Proportional half credit
-        feedback.append(("IA_PREDICTIONS_HARDCODED", {
+        feedback.append((hardcoded_code, {
             "count": hardcoded_linear,
             "range": "E19:E35",
             "note": "Formulas have correct y=mx+b structure but use hardcoded slope/intercept values."

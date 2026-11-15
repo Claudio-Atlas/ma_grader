@@ -18,10 +18,21 @@ Grading Criteria:
     - No credit (0 pts): No formula or wrong result
 """
 
+import re
+
 from typing import Dict, Any, List, Tuple, Optional
 from openpyxl.worksheet.worksheet import Worksheet
 
 from graders.unit_conversions.utils import norm_formula
+
+
+def _other_cell(formula, expected):
+    """The cell a temperature formula points at instead of `expected` (e.g. a
+    typo like C4 for C41), or None if it references no other cell."""
+    if not isinstance(formula, str):
+        return None
+    refs = [r for r in re.findall(r"[A-Z]{1,3}\$?\d+", formula.upper().replace("$", "")) if r != expected]
+    return refs[0] if refs else None
 
 
 def _get_cell_value(sheet: Worksheet, cell_ref: str) -> Optional[float]:
@@ -207,8 +218,9 @@ def grade_temp_conversions_v2(sheet: Worksheet) -> Dict[str, Any]:
     elif c40_has_structure or (c40_has_formula and _check_c40_calculated_value(sheet)):
         # Partial credit: formula has correct math structure but hardcoded values
         score += 1
-        feedback.append(("UC_TEMP_C40_PARTIAL", {
+        feedback.append(("UC_TEMP_C40_WRONG_CELL" if _other_cell(c40, "A40") else "UC_TEMP_C40_PARTIAL", {
             "cell": "C40",
+            "found": _other_cell(c40, "A40") or "",
             "note": "Formula has correct conversion math but uses hardcoded values. "
                     "Use cell reference (A40) for full credit."
         }))
@@ -247,8 +259,9 @@ def grade_temp_conversions_v2(sheet: Worksheet) -> Dict[str, Any]:
     elif a41_has_structure or (a41_has_formula and _check_a41_calculated_value(sheet)):
         # Partial credit: formula has correct math structure but hardcoded values
         score += 1
-        feedback.append(("UC_TEMP_A41_PARTIAL", {
-            "cell": "A41", 
+        feedback.append(("UC_TEMP_A41_WRONG_CELL" if _other_cell(a41, "C41") else "UC_TEMP_A41_PARTIAL", {
+            "cell": "A41",
+            "found": _other_cell(a41, "C41") or "",
             "note": "Formula has correct conversion math but uses hardcoded values. "
                     "Use cell reference (C41) for full credit."
         }))

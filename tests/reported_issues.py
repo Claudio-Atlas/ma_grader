@@ -83,6 +83,15 @@ for r in range(28, 39):
     ws[f"H{r}"] = f"=G{r}/SUM(G$28:G$38)"
 check("fully correct table scores 18", check_freq_dist_values(ws)[0], 18.0)
 
+print("MA1 · Unit Conversions (Nov 2026 review)")
+from utilities.normalizers import normalize_unit_text
+from graders.unit_conversions.utils import has_typed_number, norm_formula
+for label, want in [("inch (in)/cm", "in/cm"), ("in/2.54 cm", "in/cm"), ("yr/365 d", "yr/d"),
+                    ("d/24 h", "d/h"), ("ft/hrs", "ft/h"), ("kg/cm^2", "kg/cm^2"), ("lbs/kg", "lb/kg")]:
+    check(f"unit label {label!r}", normalize_unit_text(label), want)
+check("=F26*I26 has no typed starting value", has_typed_number(norm_formula("=F26*I26")), False)
+check("=18*F26*I26 has a typed starting value", has_typed_number(norm_formula("=18*F26*I26")), True)
+
 print()
 if failures:
     print(f"{len(failures)} FAILED: {failures}")

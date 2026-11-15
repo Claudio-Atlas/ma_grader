@@ -1,23 +1,19 @@
 {
   "IA_NAME_PRESENT": "Your name is present in {cell}.",
   "IA_NAME_MISSING": "Your name is missing from {cell} on the Income Analysis tab. Type it in so your work can be identified as yours.",
-
   "IA_SLOPE_MISSING": "Your slope ({cell}) is missing a SLOPE formula. Enter =SLOPE(B19:B26,A19:A26), with the incomes first and the years second.",
   "IA_SLOPE_CORRECT": "Your slope formula in {cell} is correct.",
   "IA_SLOPE_REVERSED": "Your slope ({cell}) has the x- and y-ranges swapped. The incomes should come first and the years second: =SLOPE(B19:B26,A19:A26).",
   "IA_SLOPE_WRONG_RANGE": "Your slope ({cell}) uses SLOPE, but not the right ranges. It should be =SLOPE(B19:B26,A19:A26).",
-
   "IA_INTERCEPT_MISSING": "Your intercept ({cell}) is missing an INTERCEPT formula. Enter =INTERCEPT(B19:B26,A19:A26), with the incomes first and the years second.",
   "IA_INTERCEPT_CORRECT": "Your intercept formula in {cell} is correct.",
   "IA_INTERCEPT_REVERSED": "Your intercept ({cell}) has the x- and y-ranges swapped. The incomes should come first and the years second: =INTERCEPT(B19:B26,A19:A26).",
   "IA_INTERCEPT_WRONG_RANGE": "Your intercept ({cell}) uses INTERCEPT, but not the right ranges. It should be =INTERCEPT(B19:B26,A19:A26).",
   "IA_XY_DATA_SWAPPED": "",
-
   "IA_SLOPE_FORMAT_CORRECT": "Your slope in {cell} is formatted correctly.",
   "IA_SLOPE_FORMAT_INCORRECT": "Your slope ({cell}) should be formatted as a Number with 0 decimal places.",
   "IA_INTERCEPT_FORMAT_CORRECT": "Your intercept in {cell} is formatted correctly.",
   "IA_INTERCEPT_FORMAT_INCORRECT": "Your intercept ({cell}) should be formatted as a Number with 0 decimal places.",
-
   "IA_PREDICTIONS_ALL_CORRECT": "Your predicted income formulas in {range} are correct.",
   "IA_PREDICTIONS_NONE_CORRECT": "None of your predicted income formulas ({range}) are working yet. Each should be the slope times that row's years plus the intercept, like =B30*D19+B31.",
   "IA_PREDICTIONS_PARTIAL": "Only {correct} of your {total} predicted income formulas ({range}) work as expected. Each one should be like =B30*D19+B31: the slope times that row's years plus the intercept. Rows that need work: {issues}.",
@@ -27,31 +23,24 @@
   "IA_PREDICTIONS_MISSING_YEARS": "{count} of your predicted income formulas ({range}) don't use that row's years of experience in column D. Each should be like =B30*D19+B31.",
   "IA_PREDICTIONS_REFS_BUT_WRONG_VALUE": "{count} of your predicted income formulas ({range}) use B30 and B31 but don't give the right value. Each should be the slope times that row's years plus the intercept, like =B30*D19+B31.",
   "IA_PREDICTIONS_VALUE_BUT_NO_REFS": "{count} of your predicted incomes ({range}) have the right value, but they should be formulas that use B30 and B31, like =B30*D19+B31.",
-
   "IA_PRED_FORMAT_ALL_CORRECT": "Your predicted incomes in {range} are formatted correctly.",
   "IA_PRED_FORMAT_NONE_CORRECT": "Your predicted incomes ({range}) should be formatted as Currency with 0 decimal places.",
   "IA_PRED_FORMAT_PARTIAL": "Only {correct} of your {total} predicted incomes ({range}) are formatted as Currency with 0 decimal places. The whole range should use that format.",
-
   "IA_SCATTER_NOT_CHECKED": "Your scatterplot isn't graded automatically. Your instructor will review it by hand.",
-
   "IA_SCATTER_NOT_FOUND": "No XY scatter chart was found on the Income Analysis tab. Insert one using the BLS income data in columns A and B.",
   "IA_SCATTER_FOUND": "Your XY scatter chart is present.",
   "IA_SCATTER_HAS_LINES": "Your scatter chart connects the data points with lines. A scatter plot should show markers only (the trendline is separate), so switch it to Scatter with only Markers.",
   "IA_SCATTER_WRONG_DATA": "Your scatter chart isn't plotting the right data. It should use the BLS data in columns A and B, not your predicted values.",
   "IA_SCATTER_DATA_UNVERIFIED": "[MANUAL REVIEW] The chart's data source could not be read automatically. Confirm it plots the BLS data (columns A and B) and award up to 3 of the chart points.",
-
   "IA_SCATTER_TITLE_PRESENT": "Your chart title is present.",
   "IA_SCATTER_TITLE_MISSING": "Your chart is missing a title. Add one that describes the data.",
-
   "IA_SCATTER_XLABEL_PRESENT": "Your x-axis label is present.",
   "IA_SCATTER_XLABEL_MISSING": "Your chart is missing an x-axis label. Add one that says what the x-axis shows, such as Years of Experience.",
-
   "IA_SCATTER_YLABEL_PRESENT": "Your y-axis label is present.",
   "IA_SCATTER_YLABEL_MISSING": "Your chart is missing a y-axis label. Add one that says what the y-axis shows, such as Income.",
-
   "IA_SCATTER_TRENDLINE_PRESENT": "Your trendline is present.",
   "IA_SCATTER_TRENDLINE_MISSING": "Your chart is missing a trendline. Add a linear trendline to show the relationship between years and income.",
-
   "IA_SCATTER_EXTENDED_CORRECT": "Your trendline is extended correctly.",
-  "IA_SCATTER_EXTENDED_MISSING": "Your trendline should be extended to cover {expected_min} to {expected_max} years. In Format Trendline, set Forecast Forward and Backward so it reaches that range."
+  "IA_SCATTER_EXTENDED_MISSING": "Your trendline should be extended to cover {expected_min} to {expected_max} years. In Format Trendline, set Forecast Forward and Backward so it reaches that range.",
+  "IA_PREDICTIONS_WRONG_CELLS": "{count} of your predicted income formulas ({range}) use B30 and B31 in the wrong places. Each should be the slope (B30) times the year plus the intercept (B31), like =B30*D19+B31."
 }

@@ -27,7 +27,7 @@ Grading Criteria:
 from typing import Dict, Any, List, Tuple
 from openpyxl.worksheet.worksheet import Worksheet
 
-from graders.unit_conversions.utils import norm_formula, norm_unit
+from graders.unit_conversions.utils import has_typed_number, norm_formula, norm_unit
 
 
 def grade_row_26_v2(sheet: Worksheet) -> Dict[str, Any]:
@@ -182,7 +182,10 @@ def grade_row_26_v2(sheet: Worksheet) -> Dict[str, Any]:
         # Full credit: references starting value AND all ratios
         final_formula_score = 2
         final_formula_feedback.append(("UC26_FINAL_FORMULA_CORRECT", {"cell": "O26"}))
-    elif all(ref in O for ref in ratio_refs) and "*" in O and "C26" not in O:
+    elif (all(ref in O for ref in ratio_refs) and "*" in O and "C26" not in O
+          and has_typed_number(O)):
+        # (Only when a starting value is actually typed in. =F26*I26 with no
+        # starting value at all gives a wrong answer, so it isn't "hardcoded".)
         # Partial credit: references ratios but hardcoded starting value
         final_formula_score = 1.5
         final_formula_feedback.append(("UC26_FINAL_FORMULA_PARTIAL", {
