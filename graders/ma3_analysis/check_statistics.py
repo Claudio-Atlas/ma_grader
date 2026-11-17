@@ -13,6 +13,9 @@ Row 21:  Range         Range        Range
 Partial Credit Rules:
 - 50% if student uses comma instead of colon (e.g., =AVERAGE(B14,B63) instead of B14:B63)
 - 75% if range is slightly off (within 3 rows) due to drag-fill without absolute references
+
+Every range in the formula is checked (both halves of MAX-MIN). One extra empty
+row at the end (B14:B64) is fine; a range that skips data rows is charged.
 """
 
 import re
@@ -33,27 +36,6 @@ def _normalize_formula(formula: str) -> str:
     if not formula:
         return ""
     return formula.replace(" ", "").upper()
-
-
-def _has_correct_range(normalized: str, expected_col: str) -> bool:
-    """True if the formula references the correct data range for `expected_col`.
-
-    Accepts the exact data range col14:col63 (with optional $), OR a whole-column
-    reference col:col. Uses word boundaries so an over-extended range like
-    B14:B630 is NOT accepted as B14:B63 (the previous substring test did).
-    """
-    if not expected_col:
-        return False
-    c = expected_col
-    # Exact 14:63 range, not preceded/followed by another digit (rejects B14:B630).
-    exact = r'(?<![A-Z0-9])\$?' + c + r'\$?14:\$?' + c + r'\$?63(?![0-9])'
-    if re.search(exact, normalized):
-        return True
-    # Whole-column reference, e.g. B:B or $B:$B.
-    whole = r'(?<![A-Z0-9])\$?' + c + r':\$?' + c + r'(?![0-9A-Z])'
-    if re.search(whole, normalized):
-        return True
-    return False
 
 
 def _extract_function_name(formula: str) -> str:
@@ -194,6 +176,47 @@ def _detect_range_offset(formula: str, expected_col: str, expected_start: int, e
     return start_offset <= tolerance and end_offset <= tolerance
 
 
+# The data rows are 14-63. One extra (empty) row at the end, e.g. B14:B64, gives
+# the same result and costs nothing.
+DATA_START, DATA_END = 14, 63
+
+
+def _range_credit(formula: str, expected_col: str) -> float:
+    """Credit for the data ranges in a statistics formula.
+
+    EVERY range on the expected column is checked, not just the first one that
+    looks right: =MAX(B14:B63)-MIN(B16:B63) skips two data rows in its MIN, so
+    it's charged the same as =AVERAGE(B16:B63) would be, even if the value
+    happens to come out the same.
+    """
+    normalized = _normalize_formula(formula)
+    c = expected_col
+    ranges = [(int(a), int(b)) for a, b in re.findall(
+        r'(?<![A-Z0-9])\$?' + c + r'\$?(\d+):\$?' + c + r'\$?(\d+)(?![0-9])', normalized)]
+    whole = re.search(r'(?<![A-Z0-9])\$?' + c + r':\$?' + c + r'(?![0-9A-Z])', normalized)
+
+    def ok(r):
+        return r[0] == DATA_START and r[1] in (DATA_END, DATA_END + 1)
+
+    bad = [r for r in ranges if not ok(r)]
+    if (ranges or whole) and not bad:
+        return CREDIT_FULL
+
+    # Partial credit: comma or minus instead of colon
+    if _detect_comma_instead_of_colon(formula, c) or _detect_minus_instead_of_colon(formula, c):
+        return CREDIT_COMMA_NOT_COLON
+    if not bad:
+        return CREDIT_NONE
+
+    # Judge the first range that's off.
+    one = f"={c}{bad[0][0]}:{c}{bad[0][1]}"
+    if _detect_range_offset(one, c, DATA_START, DATA_END):
+        return CREDIT_RANGE_OFFSET  # slightly off (drag-fill error)
+    if _detect_correct_start_wrong_end(one, c, DATA_START, DATA_END):
+        return CREDIT_CORRECT_START  # right start, wrong end
+    return CREDIT_NONE
+
+
 def _check_mean_formula(formula: str, col: str) -> Union[float, str]:
     """
     Check if formula uses AVERAGE function with correct range.
@@ -220,23 +243,7 @@ def _check_mean_formula(formula: str, col: str) -> Union[float, str]:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
 
-    # Full credit for the exact data range (or a whole-column reference).
-    if _has_correct_range(normalized, expected_col):
-        return CREDIT_FULL
-
-    # Check for partial credit: comma or minus instead of colon
-    if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
-        return CREDIT_COMMA_NOT_COLON
-    
-    # Check for partial credit: range slightly off (drag-fill error)
-    if _detect_range_offset(formula, expected_col, 14, 63):
-        return CREDIT_RANGE_OFFSET
-    
-    # Check for partial credit: correct start, wrong end (selected wrong range)
-    if _detect_correct_start_wrong_end(formula, expected_col, 14, 63):
-        return CREDIT_CORRECT_START
-    
-    return CREDIT_NONE
+    return _range_credit(formula, expected_col)
 
 
 def _check_median_formula(formula: str, col: str) -> float:
@@ -256,23 +263,7 @@ def _check_median_formula(formula: str, col: str) -> float:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
     
-    # Full credit for the exact data range (or a whole-column reference).
-    if _has_correct_range(normalized, expected_col):
-        return CREDIT_FULL
-    
-    # Check for partial credit: comma instead of colon
-    if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
-        return CREDIT_COMMA_NOT_COLON
-    
-    # Check for partial credit: range slightly off (drag-fill error)
-    if _detect_range_offset(formula, expected_col, 14, 63):
-        return CREDIT_RANGE_OFFSET
-    
-    # Check for partial credit: correct start, wrong end (selected wrong range)
-    if _detect_correct_start_wrong_end(formula, expected_col, 14, 63):
-        return CREDIT_CORRECT_START
-    
-    return CREDIT_NONE
+    return _range_credit(formula, expected_col)
 
 
 def _check_stdev_formula(formula: str, col: str) -> float:
@@ -304,23 +295,7 @@ def _check_stdev_formula(formula: str, col: str) -> float:
     if col == "I" and _uses_anchorarray(formula, "D"):
         return CREDIT_FULL
     
-    # Full credit for the exact data range (or a whole-column reference).
-    if _has_correct_range(normalized, expected_col):
-        return CREDIT_FULL
-    
-    # Check for partial credit: comma instead of colon
-    if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
-        return CREDIT_COMMA_NOT_COLON
-    
-    # Check for partial credit: range slightly off (drag-fill error)
-    if _detect_range_offset(formula, expected_col, 14, 63):
-        return CREDIT_RANGE_OFFSET
-    
-    # Check for partial credit: correct start, wrong end (selected wrong range)
-    if _detect_correct_start_wrong_end(formula, expected_col, 14, 63):
-        return CREDIT_CORRECT_START
-    
-    return CREDIT_NONE
+    return _range_credit(formula, expected_col)
 
 
 def _check_range_formula(formula: str, col: str) -> float:
@@ -351,24 +326,7 @@ def _check_range_formula(formula: str, col: str) -> float:
     if expected_col not in normalized:
         return CREDIT_NONE
     
-    # Full credit for the exact data range (or a whole-column reference).
-    if _has_correct_range(normalized, expected_col):
-        return CREDIT_FULL
-    
-    # Check for comma instead of colon in MAX or MIN
-    if _detect_comma_instead_of_colon(formula, expected_col) or _detect_minus_instead_of_colon(formula, expected_col):
-        return CREDIT_COMMA_NOT_COLON
-    
-    # Check for range offset (drag-fill error)
-    if _detect_range_offset(formula, expected_col, 14, 63):
-        return CREDIT_RANGE_OFFSET
-    
-    # Check for correct start, wrong end (selected wrong range)
-    if _detect_correct_start_wrong_end(formula, expected_col, 14, 63):
-        return CREDIT_CORRECT_START
-    
-    # Has correct structure (MAX-MIN with right column) but wrong range
-    return CREDIT_NONE
+    return _range_credit(formula, expected_col)
 
 
 def check_statistics(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
@@ -441,7 +399,7 @@ def check_statistics(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
                 feedback.append((partial_code, {
                     "cell": cell_ref, 
                     "reason": "range_offset",
-                    "hint": "Range is slightly off - use absolute references ($) when copying formulas"
+                    "hint": "the data range should cover rows 14 through 63 (if you copied the formula, $ signs keep the range from shifting)"
                 }))
             elif credit == CREDIT_COMMA_NOT_COLON:
                 # 50% credit for comma instead of colon

@@ -203,6 +203,7 @@ def grade_zip(
                                 break
                     students.append(entry)
 
+        logs.extend(f"Warning: {w}" for w in pipeline_state.get("warnings", []))
         grading_result = pipeline_state.get("grading_result")
         success_count = grading_result.success_count if isinstance(grading_result, GradingResult) else len(students)
         issue_count = len(grading_result.issues) if isinstance(grading_result, GradingResult) else 0
@@ -371,6 +372,7 @@ def grade_one(
         except FileNotFoundError:
             logs.append("No grade files found — master workbook skipped")
 
+        logs.extend(f"Warning: {w}" for w in pipeline_state.get("warnings", []))
         grading_result = pipeline_state.get("grading_result")
         success_count = grading_result.success_count if isinstance(grading_result, GradingResult) else 1
         issues = []

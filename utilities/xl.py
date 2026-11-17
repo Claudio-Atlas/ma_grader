@@ -95,3 +95,25 @@ def repair_workbook_file(path):
         return True
     os.remove(tmp)
     return False
+
+
+def has_cached_values(wb_formulas, wb_values):
+    """False when the workbook has formulas but none of them has a saved
+    (calculated) value — e.g. a file saved by Excel Online or another app that
+    doesn't store results. Checks that compare calculated values then have
+    nothing to read, so callers should warn instead of silently skipping."""
+    saw_formula = False
+    for ws in wb_formulas.worksheets:
+        if ws.title not in wb_values.sheetnames:
+            continue
+        values = wb_values[ws.title]
+        for row in ws.iter_rows():
+            for cell in row:
+                v = cell.value
+                is_formula = (isinstance(v, str) and v.startswith("=")) or type(v).__name__ == "ArrayFormula"
+                if not is_formula:
+                    continue
+                saw_formula = True
+                if values[cell.coordinate].value is not None:
+                    return True
+    return not saw_formula

@@ -59,5 +59,8 @@
   "HIST_GAP_WRONG": "Your chart's bars have gaps between them, so it reads as a bar chart, not a histogram. Right-click a bar, choose Format Data Series, and set Gap Width to 0%.",
   "HIST_TITLE_PLACEHOLDER": "Your chart title (\"{title}\") is a placeholder, not a real title. Replace it with a real title that describes the data, e.g. 'Change in Scores'.",
   "HIST_CAPPED": "Because your chart does not plot the Frequency data, it can't count as a histogram yet, so this part is capped at 2 of 6 points. Fix the chart's data first.",
-  "FREQ_COUNT_UNDERCOUNT": "Instructor check (no points deducted): the frequencies add up to {counted} of the {total} data values. This can be normal, since it often comes from the bin width or limits, which are graded separately. Please verify the bin width, limits, and boundary operators by eye."
+  "FREQ_COUNT_UNDERCOUNT": "Instructor check (no points deducted): the frequencies add up to {counted} of the {total} data values. This can be normal, since it often comes from the bin width or limits, which are graded separately. Please verify the bin width, limits, and boundary operators by eye.",
+  "VIZ_NO_CACHED_VALUES": "Instructor check (no points deducted): this workbook was saved without calculated values (often a sign of Excel Online), so the check that the frequencies add up to all 50 data values could not run. Please glance at the Frequency column by eye.",
+  "HIST_LABELS_TWO_COLUMNS": "Your chart's horizontal axis labels come from two columns (F28:G38), so the counts are mixed into the labels. In Select Data, edit the axis labels to use only the Title of Bin column (F28:F38).",
+  "HIST_EXTRA_SERIES": "Your chart plots the Title of Bin column (F28:F38) as a second set of bars. In Select Data, remove that extra series and set F28:F38 as the horizontal axis labels instead."
 }

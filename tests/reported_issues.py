@@ -92,6 +92,94 @@ for label, want in [("inch (in)/cm", "in/cm"), ("in/2.54 cm", "in/cm"), ("yr/365
 check("=F26*I26 has no typed starting value", has_typed_number(norm_formula("=F26*I26")), False)
 check("=18*F26*I26 has a typed starting value", has_typed_number(norm_formula("=18*F26*I26")), True)
 
+print("MA3 · Class review (Nov 2026)")
+import tempfile
+from openpyxl import load_workbook
+from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.data_source import AxDataSource, MultiLevelStrRef
+from utilities.xl import has_cached_values
+from graders.ma3_analysis.check_statistics import _check_mean_formula, _check_range_formula
+from graders.ma3_visualization.check_bin_table import _check_width_formula
+from graders.ma3_visualization.check_histogram import _is_placeholder_title, check_histogram
+from graders.ma3_visualization.grade_visualization import grade_visualization_tab
+
+# 1. Relative frequency over a fixed total
+wb = Workbook()
+ws = wb.active
+ws["I38"] = "=SUM(G28:G38)"
+ws["J38"] = 50
+ws["K38"] = "=AVERAGE(G28:G38)"
+ws["H28"] = "=G28/(SUM(_xlfn.ANCHORARRAY($G$28)))"   # as Excel saves G28#
+strip_future_prefixes(wb)
+check("H: =G28/$I$38 (I38 =SUM(G28:G38)) accepted", _check_relative_freq_formula("=G28/$I$38", 28, ws), True)
+check("H: =G29/I$38 accepted", _check_relative_freq_formula("=G29/I$38", 29, ws), True)
+check("H: =G28/$J$38 (J38 holds 50) accepted", _check_relative_freq_formula("=G28/$J$38", 28, ws), True)
+check("H: =G28/I38 (relative total cell) rejected", _check_relative_freq_formula("=G28/I38", 28, ws), False)
+check("H: =G29/$K$38 (not a total) rejected", _check_relative_freq_formula("=G29/$K$38", 29, ws), False)
+check("H: =G28/(SUM(ANCHORARRAY($G$28))) accepted", _check_relative_freq_formula(ws["H28"].value, 28, ws), True)
+check("H: =G28/SUM(G28#) accepted", _check_relative_freq_formula("=G28/SUM(G28#)", 28, ws), True)
+
+# 2. Bin width divisor counted from the table, and files without cached values
+check("E24: =(E23-E22)/ROWS(D28:D38) accepted", _check_width_formula("=(E23-E22)/ROWS(D28:D38)"), True)
+check("E24: =(E23-E22)/COUNT(E28:E38) accepted", _check_width_formula("=(E23-E22)/COUNT(E28:E38)"), True)
+check("E24: =(E23-E22)/COUNTA(F28:F38) accepted", _check_width_formula("=(E23-E22)/COUNTA(F28:F38)"), True)
+check("E24: =(E23-E22)/ROWS(D28:D37) rejected", _check_width_formula("=(E23-E22)/ROWS(D28:D37)"), False)
+check("E24: =(E23-E22)/ROWS(D28:E38) rejected", _check_width_formula("=(E23-E22)/ROWS(D28:E38)"), False)
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "no_cache.xlsx")
+    wb = Workbook()
+    wb.active.title = "Visualization"
+    wb.active["B12"] = 1.5
+    wb.active["E22"] = "=MIN(B12:B61)"   # openpyxl saves no calculated values
+    wb.save(path)
+    wb_f, wb_v = load_workbook(path), load_workbook(path, data_only=True)
+    check("workbook saved without calculated values is detected", has_cached_values(wb_f, wb_v), False)
+    fb = grade_visualization_tab(wb_f.active, wb_v.active, cached_values=False)["freqdist_feedback"]
+    check("frequency row gets the no-cached-values note", any(c == "VIZ_NO_CACHED_VALUES" for c, _ in fb), True)
+
+# 3. Placeholder titles only when the whole title is a placeholder
+for title, want in [("Change in Test Score (Title of Bin)", False), ("Title of Bin", True),
+                    ("Title of Bins", True), ("Chart Title", True), ("Axis Title", True), ("title of bin ", True)]:
+    check(f"placeholder {title!r}", _is_placeholder_title(title), want)
+
+# 4. Statistics ranges: one extra empty row is fine, skipped data rows aren't
+check("=AVERAGE(B14:B64) full credit", _check_mean_formula("=AVERAGE(B14:B64)", "G"), 1.0)
+check("=(MAX(B14:B63)-(MIN(B14:B64))) full credit", _check_range_formula("=(MAX(B14:B63)-(MIN(B14:B64)))", "G"), 1.0)
+check("=MAX(B14:B63)-MIN(B16:B63) charged", _check_range_formula("=MAX(B14:B63)-MIN(B16:B63)", "G"), 0.75)
+check("=MAX(B14:B62)-MIN(B14:B62) charged", _check_range_formula("=MAX(B14:B62)-MIN(B14:B62)", "G"), 0.75)
+check("=AVERAGE(B15:B64) charged", _check_mean_formula("=AVERAGE(B15:B64)", "G"), 0.75)
+check("=AVERAGE(B14:B63) full credit", _check_mean_formula("=AVERAGE(B14:B63)", "G"), 1.0)
+
+
+# 5. Chart edge cases
+def histogram(build):
+    ws = Workbook().active
+    chart = BarChart()
+    chart.title, chart.x_axis.title, chart.y_axis.title = "Change in Scores", "Change", "Frequency"
+    chart.gapWidth = 0
+    build(ws, chart)
+    ws.add_chart(chart, "J2")
+    score, fb = check_histogram(ws)
+    return score, [c for c, _ in fb]
+
+
+def two_column_labels(ws, chart):
+    chart.add_data(Reference(ws, min_col=7, min_row=28, max_row=38))
+    chart.series[0].cat = AxDataSource(multiLvlStrRef=MultiLevelStrRef(f="Visualization!$F$28:$G$38"))
+
+
+def two_series(ws, chart):
+    chart.add_data(Reference(ws, min_col=6, min_row=28, max_row=38))
+    chart.add_data(Reference(ws, min_col=7, min_row=28, max_row=38))
+
+
+score, codes = histogram(two_column_labels)
+check("labels from F28:G38: half label credit", score, 5.5)
+check("labels from F28:G38: says to use only F28:F38", "HIST_LABELS_TWO_COLUMNS" in codes, True)
+score, codes = histogram(two_series)
+check("series F and G, no labels: frequency credited", score, 5.0)
+check("series F and G: says to remove the extra series", "HIST_EXTRA_SERIES" in codes and "HIST_CAPPED" not in codes, True)
+
 print()
 if failures:
     print(f"{len(failures)} FAILED: {failures}")

@@ -9,7 +9,7 @@ Author: Clayton Ragsdale
 
 import os
 from openpyxl import load_workbook
-from utilities.xl import load_workbook as load_student_workbook
+from utilities.xl import has_cached_values, load_workbook as load_student_workbook
 from utilities.humanize_sheet import humanize_grading_sheet
 from typing import Dict, Any, Optional
 
@@ -117,6 +117,18 @@ def phase1_grade_all_students_ma3(
             logger.debug(f"  Loading submission: {submission_file}")
             student_wb = load_student_workbook(submission_file, data_only=False)  # For formulas
             student_wb_data = load_workbook(submission_file, data_only=True)  # For calculated values
+
+            # Files saved without calculated values (e.g. by Excel Online) leave
+            # the value-based checks with nothing to read. Say so instead of
+            # letting those checks skip silently.
+            cached_values = has_cached_values(student_wb, student_wb_data)
+            if not cached_values:
+                warning = (f"{student_name}: the workbook has no saved calculated values "
+                           "(likely saved by Excel Online), so value-based checks were skipped. "
+                           "Opening and re-saving it in desktop Excel fixes this.")
+                logger.warning(f"  {warning}")
+                if pipeline_state is not None:
+                    pipeline_state.setdefault("warnings", []).append(warning)
             
             logger.debug(f"  Loading grading sheet: {grading_file}")
             grading_wb = load_workbook(grading_file)
@@ -155,7 +167,7 @@ def phase1_grade_all_students_ma3(
                     logger.debug(f"  Grading Visualization tab...")
                     ws_viz = student_wb[sheet_map["Visualization"]]
                     ws_viz_data = student_wb_data[sheet_map["Visualization"]]
-                    viz_results = grade_visualization_tab(ws_viz, ws_viz_data)
+                    viz_results = grade_visualization_tab(ws_viz, ws_viz_data, cached_values=cached_values)
                     write_ma3_visualization_results(ws_grading, viz_results)
                     logger.debug(f"  Visualization tab complete")
                 except Exception as e:

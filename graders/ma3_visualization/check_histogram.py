@@ -17,21 +17,20 @@ from openpyxl.chart import BarChart
 
 _TITLE_PLACEHOLDERS = (
     "title", "chart title", "axis title", "axis title 1",
-    "title of bin", "title of the bin", "title of bins",
+    "title of bin", "title of the bin", "title of bins", "title of the bins",
 )
 
 
 def _is_placeholder_title(text: Optional[str]) -> bool:
     """True if the title is empty or one of Excel's default placeholder strings
-    (or the assignment's 'Title of Bin' label), which shouldn't earn credit."""
+    (or the assignment's 'Title of Bin' column label), which shouldn't earn credit.
+
+    Only the WHOLE title counts: "Change in Test Score (Title of Bin)" is a real
+    title that happens to mention the column name, so it earns credit."""
     if not text or not text.strip():
         return True
-    s = text.strip().lower()
-    if s in _TITLE_PLACEHOLDERS:
-        return True
-    if "title of" in s:  # "Title of the bin", "Title of Bins", etc.
-        return True
-    return False
+    s = re.sub(r"\s+", " ", text).strip().strip(".:").strip().lower()
+    return s in _TITLE_PLACEHOLDERS
 
 
 def _extract_title_text(title_obj, sheet: Optional[Worksheet] = None) -> Optional[str]:
@@ -109,6 +108,9 @@ def _check_data_range(series) -> Tuple[bool, bool, str, str]:
                 categories_ref = series.cat.numRef.f
             elif hasattr(series.cat, 'strRef') and series.cat.strRef:
                 categories_ref = series.cat.strRef.f
+            elif getattr(series.cat, 'multiLvlStrRef', None):
+                # Labels picked from more than one column, e.g. F28:G38.
+                categories_ref = series.cat.multiLvlStrRef.f
     except Exception:
         pass
     
@@ -118,8 +120,8 @@ def _check_data_range(series) -> Tuple[bool, bool, str, str]:
     if values_cols & {"G", "H"}:
         values_ok = True
 
-    # Category labels should reference the Title of Bin column (F).
-    if "F" in _cols_in_ref(categories_ref):
+    # Category labels should reference the Title of Bin column (F) only.
+    if _cols_in_ref(categories_ref) == {"F"}:
         categories_ok = True
     
     return values_ok, categories_ok, values_ref or "", categories_ref or ""
@@ -168,8 +170,14 @@ def check_histogram(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
     # ---- (2) Values = Frequency (G) 2.0  /  (3) Categories = Bin titles (F) 1.0
     values_ok = categories_ok = False
     if hasattr(bar_chart, 'series') and bar_chart.series:
-        series = bar_chart.series[0]
-        values_ok, categories_ok, values_ref, categories_ref = _check_data_range(series)
+        checked = [_check_data_range(s) for s in bar_chart.series]
+        # Grade the series that plots the frequencies, wherever it sits.
+        values_ok, categories_ok, values_ref, categories_ref = next(
+            (c for c in checked if c[0]), checked[0])
+        # A second series plotting the bin titles (F) means F28:F38 was added as
+        # bars instead of being set as the axis labels.
+        extra_f_series = len(checked) > 1 and any(
+            not c[0] and _cols_in_ref(c[2]) == {"F"} for c in checked)
 
         if values_ok:
             score += 2.0
@@ -177,9 +185,16 @@ def check_histogram(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
         else:
             feedback.append(("HIST_DATA_WRONG", {}) if values_ref else ("HIST_DATA_MISSING", {}))
 
+        label_cols = _cols_in_ref(categories_ref)
         if categories_ok:
             score += 1.0
             feedback.append(("HIST_LABELS_OK", {}))
+        elif "F" in label_cols:
+            # The bin titles are there, but mixed with another column (F28:G38).
+            score += 0.5
+            feedback.append(("HIST_LABELS_TWO_COLUMNS", {}))
+        elif extra_f_series and values_ok and not categories_ref:
+            feedback.append(("HIST_EXTRA_SERIES", {}))
         else:
             feedback.append(("HIST_LABELS_WRONG", {}) if categories_ref else ("HIST_LABELS_MISSING", {}))
     else:

@@ -157,29 +157,66 @@ def _check_frequency_formula(formula: str, row: int = None, spill: bool = False)
     return False
 
 
-# Fixed totals a relative frequency may divide by.
+# Fixed totals a relative frequency may divide by. The frequency column's
+# total can also be written with Excel's spill reference: SUM(G28#), which
+# Excel saves as SUM(_xlfn.ANCHORARRAY(G28)).
+_FREQ_SUM = r"SUM\((?:G28:G38|G28#|(?:_XLFN\.)?ANCHORARRAY\(G28\))\)"
 _TOTALS = (
-    r"SUM\(G28:G38\)", r"\(SUM\(G28:G38\)\)",
+    _FREQ_SUM, rf"\({_FREQ_SUM}\)",
     rf"COUNTA?\({_DATA}\)", rf"\(COUNTA?\({_DATA}\)\)",
     r"50", r"\(50\)",
 )
 
+# A total cell the student built themselves (e.g. I38 holding =SUM(G28:G38)).
+# Its row must be absolute ($I$38 or I$38) so it doesn't shift when filled down.
+_TOTAL_CELL = re.compile(r"\(?\$?([A-Z]{1,3})\$(\d+)\)?")
 
-def _check_relative_freq_formula(formula: str, row: int) -> bool:
+
+def _is_fixed_total(denominator: str) -> bool:
+    """Denominator ($ already stripped) is one of the accepted fixed totals."""
+    return any(re.fullmatch(t, denominator) for t in _TOTALS)
+
+
+def _total_cell_ok(denominator_raw: str, sheet) -> bool:
+    """=G28/$I$38 where I38 holds the total: =SUM(G28:G38) (or another accepted
+    total) or the number 50."""
+    if sheet is None:
+        return False
+    m = _TOTAL_CELL.fullmatch(denominator_raw)
+    if not m:
+        return False
+    try:
+        value = sheet[f"{m.group(1)}{m.group(2)}"].value
+    except ValueError:
+        return False
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return abs(value - 50) < 1e-9
+    text = _formula_text(value)
+    if not text:
+        return False
+    inner = _normalize_formula(text).replace("$", "")[1:]
+    return _is_fixed_total(inner)
+
+
+def _check_relative_freq_formula(formula: str, row: int, sheet=None) -> bool:
     """Relative frequency = this row's frequency / the fixed total.
 
         =G28/SUM(G$28:G$38)   =G28/50   =G28/COUNT($B$12:$B$61)
+        =G28/SUM(G28#)        =G28/$I$38  (I38 holds =SUM(G28:G38); needs `sheet`)
 
     The total must stay put on every row. A relative SUM/COUNT range dragged
     down the column (=G29/SUM(G29:G39), =G29/COUNT(B14:B62)) divides by the
-    wrong total, so only the exact fixed range is accepted.
+    wrong total, so only the exact fixed range is accepted. Likewise a total
+    cell must be referenced with an absolute row: =G29/I39 has shifted.
     """
     if not formula or not formula.startswith("="):
         return False
-    f = _normalize_formula(formula).replace("$", "")
-    f = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", f)  # allow a ROUND wrapper
-    m = re.fullmatch(rf"=\(?G{row}\)?/(.+)", f)
-    return m is not None and any(re.fullmatch(t, m.group(1)) for t in _TOTALS)
+    raw = _normalize_formula(formula)
+    raw = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", raw)  # allow a ROUND wrapper
+    m = re.fullmatch(rf"=\(?\$?G\$?{row}\)?/(.+)", raw)
+    if m is None:
+        return False
+    return _is_fixed_total(m.group(1).replace("$", "")) or _total_cell_ok(m.group(1), sheet)
 
 
 def _formula_text(cell_value) -> str:
@@ -248,20 +285,22 @@ def _is_spill_relfreq(anchor_value) -> bool:
         return False
     # The NUMERATOR must be the frequency range (=G28:G38/..., =G28#/...);
     # a per-row =G28/SUM(G28:G38) only has the range in its denominator.
-    if re.match(r"=(?:ROUND\()?\(?(?:G2[0-9]:G3[0-9]|G28#)", normalized):
+    if re.match(r"=(?:ROUND\()?\(?(?:G2[0-9]:G3[0-9]|G28#|(?:_XLFN\.)?ANCHORARRAY\(G28\))", normalized):
         return True
     if type(anchor_value).__name__ == "ArrayFormula" and "G" in normalized:
         return True
     return False
 
 
-def _spill_relfreq_ok(anchor_value) -> bool:
+def _spill_relfreq_ok(anchor_value, sheet=None) -> bool:
     """A whole-column relative frequency must divide by the fixed total,
     e.g. =G28:G38/SUM(G28:G38) or =G28#/50."""
-    f = _normalize_formula(_formula_text(anchor_value)).replace("$", "")
-    f = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", f)
-    m = re.fullmatch(r"=\(?(?:G28:G3[78]|G28#)\)?/(.+)", f)
-    return m is not None and any(re.fullmatch(t, m.group(1)) for t in _TOTALS)
+    raw = _normalize_formula(_formula_text(anchor_value))
+    raw = re.sub(r"^=ROUND\((.*),\d+\)$", r"=\1", raw)
+    m = re.fullmatch(r"=\(?(?:\$?G\$?28:\$?G\$?3[78]|\$?G\$?28#|(?:_XLFN\.)?ANCHORARRAY\(\$?G\$?28\))\)?/(.+)", raw)
+    if m is None:
+        return False
+    return _is_fixed_total(m.group(1).replace("$", "")) or _total_cell_ok(m.group(1), sheet)
 
 
 def check_freq_dist_limits(sheet: Worksheet) -> Tuple[float, List[Tuple[str, dict]]]:
@@ -358,7 +397,7 @@ def check_freq_dist_values(sheet: Worksheet, values_sheet: Worksheet = None) -> 
         correct_freq = total_rows
     elif freq_is_spill:
         feedback.append(("FREQ_COUNT_WRONG", {"cell": "G28"}))
-    if relfreq_is_spill and _spill_relfreq_ok(sheet["H28"].value):
+    if relfreq_is_spill and _spill_relfreq_ok(sheet["H28"].value, sheet):
         correct_relfreq = total_rows
     elif relfreq_is_spill:
         feedback.append(("FREQ_REL_WRONG", {"cell": "H28"}))
@@ -407,7 +446,7 @@ def check_freq_dist_values(sheet: Worksheet, values_sheet: Worksheet = None) -> 
                 feedback.append(("FREQ_REL_MISSING", {"cell": cell_ref}))
             elif not isinstance(formula, str) or not formula.startswith("="):
                 feedback.append(("FREQ_REL_WRONG", {"cell": cell_ref}))
-            elif _check_relative_freq_formula(formula, row):
+            elif _check_relative_freq_formula(formula, row, sheet):
                 correct_relfreq += 1
             else:
                 feedback.append(("FREQ_REL_WRONG", {"cell": cell_ref}))

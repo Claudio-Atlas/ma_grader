@@ -51,6 +51,10 @@ def _check_max_formula(formula: str) -> bool:
 # range divided by 11.
 NUM_BINS = 11
 
+# Formulas that count the 11 bins from the frequency table itself: ROWS, COUNT
+# or COUNTA of the lower limits (D), upper limits (E) or bin titles (F).
+_BIN_COUNT = r"(?:ROWS|COUNTA?)\((?P<bincol>[DEF])28:(?P=bincol)38\)"
+
 
 def _check_width_formula(formula: str, values_sheet=None) -> bool:
     """
@@ -75,8 +79,9 @@ def _check_width_formula(formula: str, values_sheet=None) -> bool:
     if "/" not in normalized:
         return False
 
-    # Divisor (number of bins) must be exactly 11 (not part of a longer number).
-    div_ok = bool(re.search(r'/\(?11\)?(?![\d.])', normalized))
+    # Divisor (number of bins) must be exactly 11 (not part of a longer number),
+    # or a count of the 11 bin rows: ROWS(D28:D38), COUNT(E28:E38), etc.
+    div_ok = bool(re.search(rf'/\(?(?:11(?![\d.])|{_BIN_COUNT})\)?', normalized))
 
     # The subtraction must be grouped so operator precedence is correct.
     grouped_cells = ("(E23-E22)" in normalized) or ("(E22-E23)" in normalized)

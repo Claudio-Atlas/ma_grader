@@ -24,7 +24,8 @@ from .check_histogram import check_histogram
 from .check_formatting import check_visualization_formatting
 
 
-def grade_visualization_tab(sheet: Worksheet, sheet_data: Worksheet = None) -> Dict[str, Any]:
+def grade_visualization_tab(sheet: Worksheet, sheet_data: Worksheet = None,
+                            cached_values: bool = True) -> Dict[str, Any]:
     """
     Visualization tab grading orchestrator.
 
@@ -32,6 +33,9 @@ def grade_visualization_tab(sheet: Worksheet, sheet_data: Worksheet = None) -> D
         sheet: The openpyxl Worksheet object for the Visualization tab (formulas)
         sheet_data: The Visualization tab loaded data_only (calculated values),
                     used to verify the bin-width value.
+        cached_values: False when the workbook was saved without calculated
+                    values; adds an instructor note to the frequency row,
+                    since the frequency total check couldn't run.
 
     Returns:
         Dict containing scores and feedback for each competency:
@@ -63,6 +67,8 @@ def grade_visualization_tab(sheet: Worksheet, sheet_data: Worksheet = None) -> D
     # F28:F38 (Title), G28:G38 (Freq), H28:H38 (RelFreq)
     # ============================================================
     freqdist_score, freqdist_feedback = check_freq_dist_values(sheet, sheet_data)
+    if not cached_values:
+        freqdist_feedback = list(freqdist_feedback) + [("VIZ_NO_CACHED_VALUES", {})]
     results["freqdist_score"] = freqdist_score
     results["freqdist_feedback"] = freqdist_feedback
     
