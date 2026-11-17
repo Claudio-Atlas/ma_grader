@@ -28,7 +28,7 @@ from writers.write_ma2_student_loans_results import write_student_loans_results_
 from writers.write_ma2_annual_budget_results import write_annual_budget_results_to_grading_sheet
 
 # ---- Error Handling ----
-from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error
+from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error, grader_issue
 from utilities.humanize_sheet import humanize_grading_sheet
 # ------------------------
 
@@ -113,6 +113,7 @@ def phase1_grade_all_students_ma2(
                     _cb(idx, total_students, student_name)
                 except Exception:
                     pass
+        problems = []  # rows the grader couldn't explain, reported as issues
 
         student_wb = None
         student_wb_data = None
@@ -144,10 +145,13 @@ def phase1_grade_all_students_ma2(
                     ws_income = student_wb[sheet_map["Income and Projection"]]
                     ws_income_data = student_wb_data[sheet_map["Income and Projection"]]
                     income_results = grade_income_projection_tab(ws_income, ws_income_data)
+                    if isinstance(income_results, dict) and income_results.get("error"):
+                        problems.append(f"Income and Projection tab: {income_results['error']}")
                     write_income_projection_results(ws_grading, income_results)
                     logger.debug(f"  Income and Projection tab complete")
                 except Exception as e:
                     logger.warning(f"  Income and Projection error for {student_name}: {e}")
+                    problems.append(f"Income and Projection tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Income and Projection (sheet missing)")
                 skipped_count += 1
@@ -161,10 +165,13 @@ def phase1_grade_all_students_ma2(
                 try:
                     logger.debug(f"  Grading Credit Cards tab...")
                     credit_results = grade_credit_cards_tab(submission_file)
+                    if isinstance(credit_results, dict) and credit_results.get("error"):
+                        problems.append(f"Credit Cards tab: {credit_results['error']}")
                     write_credit_card_results_to_grading_sheet(grading_wb, credit_results)
                     logger.debug(f"  Credit Cards tab complete")
                 except Exception as e:
                     logger.warning(f"  Credit Cards error for {student_name}: {e}")
+                    problems.append(f"Credit Cards tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Credit Cards (sheet missing)")
                 skipped_count += 1
@@ -178,10 +185,13 @@ def phase1_grade_all_students_ma2(
                 try:
                     logger.debug(f"  Grading Student Loans tab...")
                     loans_results = grade_student_loans_tab(submission_file)
+                    if isinstance(loans_results, dict) and loans_results.get("error"):
+                        problems.append(f"Student Loans tab: {loans_results['error']}")
                     write_student_loans_results_to_grading_sheet(grading_wb, loans_results)
                     logger.debug(f"  Student Loans tab complete")
                 except Exception as e:
                     logger.warning(f"  Student Loans error for {student_name}: {e}")
+                    problems.append(f"Student Loans tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Student Loans (sheet missing)")
                 skipped_count += 1
@@ -195,10 +205,13 @@ def phase1_grade_all_students_ma2(
                 try:
                     logger.debug(f"  Grading Annual Budget tab...")
                     budget_results = grade_annual_budget_tab(submission_file)
+                    if isinstance(budget_results, dict) and budget_results.get("error"):
+                        problems.append(f"Annual Budget tab: {budget_results['error']}")
                     write_annual_budget_results_to_grading_sheet(grading_wb, budget_results)
                     logger.debug(f"  Annual Budget tab complete")
                 except Exception as e:
                     logger.warning(f"  Annual Budget error for {student_name}: {e}")
+                    problems.append(f"Annual Budget tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Annual Budget (sheet missing)")
                 skipped_count += 1
@@ -208,11 +221,14 @@ def phase1_grade_all_students_ma2(
                 typed_name = None
                 if sheet_map.get("Income and Projection"):
                     typed_name = student_wb[sheet_map["Income and Projection"]]["C1"].value
-                humanize_grading_sheet(ws_grading, "MA2", typed_name or student_name)
+                humanize_grading_sheet(ws_grading, "MA2", typed_name or student_name, problems=problems)
             except Exception as e:
                 logger.warning(f"  Feedback rewrite skipped for {student_name}: {e}")
 
             grading_wb.save(grading_file)
+            for problem in problems:
+                logger.warning(f"  {student_name}: {problem}")
+                result.add_issue(grader_issue(problem, student_name))
             logger.info(f"  ✓ Graded: {student_name}")
             result.add_success()
 

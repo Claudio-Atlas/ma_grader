@@ -108,6 +108,19 @@ def _check_width_formula(formula: str, values_sheet=None) -> bool:
     return False
 
 
+_EXCEL_ERRORS = ("#REF!", "#DIV/0!", "#VALUE!", "#NAME?", "#N/A", "#NUM!", "#NULL!")
+
+
+def _value_error(values_sheet, ref):
+    """The Excel error (e.g. '#REF!') a cell calculated to, or None. A formula
+    that's written right but shows an error earns no credit: it isn't producing
+    the bin value (usually a data cell in column B was broken)."""
+    if values_sheet is None:
+        return None
+    v = values_sheet[ref].value
+    return v if isinstance(v, str) and v.strip().upper() in _EXCEL_ERRORS else None
+
+
 def check_bin_table(sheet: Worksheet, values_sheet: Worksheet = None) -> Tuple[float, List[Tuple[str, dict]]]:
     """
     Check bin table formulas in E22, E23, E24.
@@ -132,6 +145,8 @@ def check_bin_table(sheet: Worksheet, values_sheet: Worksheet = None) -> Tuple[f
         feedback.append(("BIN_MIN_MISSING", {}))
     elif not isinstance(formula, str) or not formula.startswith("="):
         feedback.append(("BIN_MIN_WRONG", {}))
+    elif _value_error(values_sheet, "E22"):
+        feedback.append(("BIN_VALUE_ERROR", {"cell": "E22", "label": "Bin Min", "error": _value_error(values_sheet, "E22")}))
     elif _check_min_formula(formula):
         correct_count += 1
         feedback.append(("BIN_MIN_OK", {}))
@@ -146,6 +161,8 @@ def check_bin_table(sheet: Worksheet, values_sheet: Worksheet = None) -> Tuple[f
         feedback.append(("BIN_MAX_MISSING", {}))
     elif not isinstance(formula, str) or not formula.startswith("="):
         feedback.append(("BIN_MAX_WRONG", {}))
+    elif _value_error(values_sheet, "E23"):
+        feedback.append(("BIN_VALUE_ERROR", {"cell": "E23", "label": "Bin Max", "error": _value_error(values_sheet, "E23")}))
     elif _check_max_formula(formula):
         correct_count += 1
         feedback.append(("BIN_MAX_OK", {}))
@@ -160,6 +177,8 @@ def check_bin_table(sheet: Worksheet, values_sheet: Worksheet = None) -> Tuple[f
         feedback.append(("BIN_WIDTH_MISSING", {}))
     elif not isinstance(formula, str) or not formula.startswith("="):
         feedback.append(("BIN_WIDTH_WRONG", {}))
+    elif _value_error(values_sheet, "E24"):
+        feedback.append(("BIN_VALUE_ERROR", {"cell": "E24", "label": "Bin Width", "error": _value_error(values_sheet, "E24")}))
     elif _check_width_formula(formula, values_sheet):
         correct_count += 1
         feedback.append(("BIN_WIDTH_OK", {}))

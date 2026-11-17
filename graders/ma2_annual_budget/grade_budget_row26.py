@@ -58,6 +58,8 @@ def grade_budget_row26(ws):
             total_points += 2
         else:
             comments.append("The subsidized loan cost (C26) should pull the payment straight from the Student Loans tab: ='Student Loan'!B29.")
+    elif c26 in (None, ""):
+        comments.append("The subsidized loan cost (C26) is empty. Enter a formula that points at the Student Loans tab, ='Student Loan'!B29, so it updates automatically.")
     else:
         comments.append("The subsidized loan cost (C26) is typed in. Make it a formula that points at the Student Loans tab, ='Student Loan'!B29, so it updates automatically.")
 

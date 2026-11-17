@@ -9,6 +9,7 @@ down to just the problems.
 """
 
 import math
+import re
 
 from openpyxl.styles import Alignment, Font
 
@@ -129,6 +130,26 @@ LAYOUTS = {
 }
 
 
+# A grader's own error message ("Error grading X: <exception>") is for the
+# run log, never for a student's Comments cell.
+_ERROR_TEXT = re.compile(r"^\s*(?:Error|Exception)\b[^:]{0,80}:|Traceback \(most recent call last\)", re.I)
+
+NO_REASON_NOTE = ("Instructor check: points were taken off here, but the grader couldn't say why. "
+                  "Please review this row by hand.")
+
+
+def strip_error_text(comment):
+    """Remove grader error messages from a comment. Returns (clean, [errors])."""
+    if not isinstance(comment, str) or not comment:
+        return comment, []
+    keep, errors = [], []
+    for part in re.split(r"\s*\|\s*|\n+", comment):
+        (errors if _ERROR_TEXT.search(part) else keep).append(part.strip())
+    if not errors:
+        return comment, []
+    return " | ".join(p for p in keep if p), errors
+
+
 LINE_PT = 15.5  # points per wrapped line at the template's 11pt font
 
 
@@ -145,13 +166,18 @@ def _fit_row(ws, row, text, col="G"):
         ws.row_dimensions[row].height = need
 
 
-def humanize_grading_sheet(ws, assignment, student_name="", row_issues=None):
+def humanize_grading_sheet(ws, assignment, student_name="", row_issues=None, problems=None):
     """Rewrite column G for every rubric row and add the overall note.
 
     row_issues: optional {row: [student-facing issue, ...]} from graders that
     report problems directly; those replace the legacy comment for that row.
+    problems: optional list; grader errors found in comments, and rows that
+    lost points without any reason, are appended here ("Row 18: ...") so the
+    run can report them. Neither ever reaches the student's comment.
     Returns the overall note text (or None if the layout is unknown).
     """
+    if problems is None:
+        problems = []
     layout = LAYOUTS.get(assignment.upper())
     if not layout:
         return None
@@ -172,13 +198,24 @@ def humanize_grading_sheet(ws, assignment, student_name="", row_issues=None):
         if row in manual_rows:
             continue  # hand-graded row: leave the instructor's material alone
         legacy = ws[f"G{row}"].value
+        legacy, errors = strip_error_text(legacy)
+        problems.extend(f"Row {row}: {e}" for e in errors)
         # Notes meant for the instructor stay visible, below the student text.
         legacy, notes = sf.split_instructor_notes(legacy)
-        text = sf.compose(praise, pts, poss, row_issues.get(row), fallback=legacy)
+        has_reason = any(i and str(i).strip() for i in (row_issues.get(row) or [])) or bool(sf.legacy_issues(legacy))
+        if pts is not None and pts < poss - 1e-9 and not has_reason:
+            # Never the generic "a few points were missed" line. An instructor
+            # note is the explanation if there is one; otherwise flag the row.
+            text = None
+            if not notes:
+                problems.append(f"Row {row}: lost {poss - pts:g} of {poss:g} points with no reason given")
+                text = NO_REASON_NOTE
+        else:
+            text = sf.compose(praise, pts, poss, row_issues.get(row), fallback=legacy)
         if notes:
             cleaned = [n.replace("[MANUAL REVIEW]", "").strip() for n in notes]
             cleaned = [n if n.lower().startswith("instructor check") else "Instructor check: " + n for n in cleaned]
-            text += "\n\n" + " ".join(cleaned)
+            text = (text + "\n\n" if text else "") + " ".join(cleaned)
         ws[f"G{row}"] = text
         ws[f"G{row}"].alignment = Alignment(wrap_text=True, vertical="top")
         _fit_row(ws, row, text)

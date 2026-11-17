@@ -1,6 +1,6 @@
 import re
 
-from utilities.formula_equiv import formulas_equivalent, equivalent_to_any
+from utilities.formula_equiv import _evaluate, formulas_equivalent, equivalent_to_any
 
 
 def normalize_formula(formula: str) -> str:
@@ -14,12 +14,25 @@ def normalize_formula(formula: str) -> str:
         .replace(")", "")
     )
 
+def is_constant(val, expected):
+    """True for the number itself, or a formula with no cell references that
+    works out to it (=4, =2+2)."""
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        return abs(val - expected) < 1e-9
+    if isinstance(val, str) and val.startswith("=") and not re.search(r"[A-Za-z]{1,3}\$?\d", val):
+        try:
+            return abs(float(_evaluate(val, {})) - expected) < 1e-9
+        except Exception:
+            return False
+    return False
+
+
 def _check_c24_constant(ws):
     """Checks that C24 contains a constant 4 (1 point)."""
     result = {"points": 0, "comment": ""}
     val = ws["C24"].value
 
-    if val == 4:
+    if is_constant(val, 4):
         result["points"] = 1
         result["comment"] = "C24 correctly entered as 4 years in school."
     else:

@@ -4,8 +4,12 @@ from utilities.formula_equiv import cell_number
 
 def grade_income_projection_cpi_values(ws, ws_data=None):
     """
-    Grades the CPI lookup table (rows 30-37) in the 'Income and Projection' tab.
+    Grades the CPI lookup table in the 'Income and Projection' tab.
     Total: 6 points (2 for month pattern, 2 for year increment, 2 for CPI values).
+
+    The table's first row (29) comes from the template: A29/B29 are given
+    formulas and only the CPI in C29 is the student's. Months and years are
+    graded on the student's rows 30-37; CPI values on every row, 29-37.
 
     ws_data (optional): the same sheet loaded data_only=True. The tab is graded
     formulas-only, so a year entered as a formula (e.g. =B30+1) would otherwise
@@ -71,10 +75,12 @@ def grade_income_projection_cpi_values(ws, ws_data=None):
         checkable = 0
         missing_rows = 0  # blank/unreadable rows count against the student
         unavailable = []
-        for r in range(start_row, end_row + 1):
+        for r in range(start_row - 1, end_row + 1):
             year = as_int(num(f"B{r}"))
             month_num = as_int(num(f"A{r}"))
             cpi_value = num(f"C{r}")
+            if r == start_row - 1 and not (year and month_num):
+                continue  # template row not filled in (name/year missing)
 
             raw_cpi = ws[f"C{r}"].value
             if cpi_value is None and year and month_num and isinstance(raw_cpi, str) and raw_cpi.startswith("="):

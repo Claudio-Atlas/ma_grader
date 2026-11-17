@@ -24,7 +24,7 @@ from graders.ma3_visualization.grade_visualization import grade_visualization_ta
 from writers.write_ma3_visualization_results import write_ma3_visualization_results
 
 # ---- Error Handling ----
-from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error
+from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error, grader_issue
 # ------------------------
 
 
@@ -108,6 +108,7 @@ def phase1_grade_all_students_ma3(
                     _cb(idx, total_students, student_name)
                 except Exception:
                     pass
+        problems = []  # rows the grader couldn't explain, reported as issues
 
         student_wb = None
         student_wb_data = None
@@ -155,6 +156,7 @@ def phase1_grade_all_students_ma3(
                     logger.debug(f"  Analysis tab complete")
                 except Exception as e:
                     logger.warning(f"  Analysis error for {student_name}: {e}")
+                    problems.append(f"Analysis tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Analysis (sheet missing)")
                 skipped_count += 1
@@ -172,6 +174,7 @@ def phase1_grade_all_students_ma3(
                     logger.debug(f"  Visualization tab complete")
                 except Exception as e:
                     logger.warning(f"  Visualization error for {student_name}: {e}")
+                    problems.append(f"Visualization tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Visualization (sheet missing)")
                 skipped_count += 1
@@ -181,11 +184,14 @@ def phase1_grade_all_students_ma3(
                 typed_name = None
                 if sheet_map.get("Analysis"):
                     typed_name = student_wb[sheet_map["Analysis"]]["B10"].value
-                humanize_grading_sheet(ws_grading, "MA3", typed_name or student_name)
+                humanize_grading_sheet(ws_grading, "MA3", typed_name or student_name, problems=problems)
             except Exception as e:
                 logger.warning(f"  Feedback rewrite skipped for {student_name}: {e}")
 
             grading_wb.save(grading_file)
+            for problem in problems:
+                logger.warning(f"  {student_name}: {problem}")
+                result.add_issue(grader_issue(problem, student_name))
             logger.info(f"  ✓ Graded: {student_name}")
             result.add_success()
 

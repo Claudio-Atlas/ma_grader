@@ -26,7 +26,7 @@ from utilities.validate_submission import validate_required_sheets, log_missing_
 # --------------------------
 
 # ---- Error Handling ----
-from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error
+from utilities.errors import GradingResult, GradingError, ErrorCategory, classify_error, grader_issue
 # ------------------------
 
 
@@ -86,6 +86,7 @@ def phase1_grade_all_students(
                     _cb(idx, total_students, student_name)
                 except Exception:
                     pass
+        problems = []  # rows the grader couldn't explain, reported as issues
 
         student_wb = None
         grading_wb = None
@@ -117,6 +118,7 @@ def phase1_grade_all_students(
                     logger.debug(f"  Income Analysis complete")
                 except Exception as e:
                     logger.warning(f"  Income Analysis error for {student_name}: {e}")
+                    problems.append(f"Income Analysis tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Income Analysis (sheet missing)")
                 skipped_count += 1
@@ -133,6 +135,7 @@ def phase1_grade_all_students(
                     logger.debug(f"  Unit Conversions complete")
                 except Exception as e:
                     logger.warning(f"  Unit Conversions error for {student_name}: {e}")
+                    problems.append(f"Unit Conversions tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Unit Conversions (sheet missing)")
                 skipped_count += 1
@@ -149,6 +152,7 @@ def phase1_grade_all_students(
                     logger.debug(f"  Currency Conversion complete")
                 except Exception as e:
                     logger.warning(f"  Currency Conversion error for {student_name}: {e}")
+                    problems.append(f"Currency Conversion tab could not be graded: {e}")
             else:
                 logger.info(f"  Skipping Currency Conversion (sheet missing)")
                 skipped_count += 1
@@ -158,11 +162,14 @@ def phase1_grade_all_students(
                 typed_name = None
                 if sheet_map.get("Income Analysis"):
                     typed_name = student_wb[sheet_map["Income Analysis"]]["B1"].value
-                humanize_grading_sheet(ws_grading, "MA1", typed_name or student_name)
+                humanize_grading_sheet(ws_grading, "MA1", typed_name or student_name, problems=problems)
             except Exception as e:
                 logger.warning(f"  Feedback rewrite skipped for {student_name}: {e}")
 
             grading_wb.save(grading_file)
+            for problem in problems:
+                logger.warning(f"  {student_name}: {problem}")
+                result.add_issue(grader_issue(problem, student_name))
             logger.info(f"  ✓ Graded: {student_name}")
             result.add_success()
 

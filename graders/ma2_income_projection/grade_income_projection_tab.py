@@ -26,7 +26,7 @@ def grade_income_projection_tab(ws, ws_data=None):
         slope = grade_slope_formula(ws)
         intercept = grade_intercept_formula(ws)
         cpi_projection = grade_cpi_projection_section(ws)
-        income_projection = grade_income_projection_section(ws)
+        income_projection = grade_income_projection_section(ws, ws_data)
         formatting=grade_income_projection_formatting(ws)
 
         # --- Store each separately for writer integration ---

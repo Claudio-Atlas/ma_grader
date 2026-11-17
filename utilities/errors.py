@@ -376,3 +376,16 @@ def format_error_summary(result: GradingResult) -> str:
                 lines.append(f"   • {name}: {err.problem}")
     
     return "\n".join(lines)
+
+
+def grader_issue(problem: str, student_name: Optional[str] = None) -> GradingError:
+    """A grading-sheet row the grader couldn't explain (or a grader error that
+    was kept out of the student's comments). The student is still graded; the
+    instructor should check that row by hand."""
+    return GradingError(
+        category=ErrorCategory.STUDENT_ISSUE,
+        problem=f"Grader couldn't fully check this file. {problem}",
+        action="Open the grade sheet and review that row by hand.",
+        student_name=student_name,
+        technical=problem,
+    )

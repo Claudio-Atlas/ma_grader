@@ -81,6 +81,11 @@ def grade_intercept_formula(ws):
             "Your INTERCEPT formula (H20) is close, but the ranges aren't quite right. It "
             "should use the CPI values first, then the years: =INTERCEPT(C29:C37, B29:B37)."
         )
+    elif normalized.startswith("=-intercept("):
+        result["comment"] = (
+            "Your intercept (H20) has a minus sign in front of INTERCEPT, which flips its sign. "
+            "Remove the minus sign: =INTERCEPT(C29:C37, B29:B37)."
+        )
     else:
         result["comment"] = "Your intercept (H20) should use the INTERCEPT function: =INTERCEPT(C29:C37, B29:B37)."
 

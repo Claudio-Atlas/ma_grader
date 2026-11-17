@@ -72,31 +72,43 @@ def _has(f, ref):
     return re.search(rf"(?<![a-z0-9]){ref}(?![0-9])", f) is not None
 
 
-def _row_ok(col, r, f):
-    """Is formula f (normalized) in column `col` at row r the correct pattern?"""
+def _row_ok(col, r, f, cells=None):
+    """Is formula f (normalized) in column `col` at row r the correct pattern?
+
+    cells: where the student's parameters actually are, e.g. {"C17": "D17"}
+    when the minimum percentage was typed in D17. Formulas that point at the
+    student's own parameter cells are graded as correct."""
+    cells = cells or {}
+
+    def p(ref):
+        return cells.get(ref.upper(), ref.upper()).lower()
+
     if col == "B":
         if r == START_ROW:
             # Start balance: references C14 (often wrapped in an IF(... , C14)).
-            return _has(f, "c14")
+            return _has(f, p("c14"))
         return _has(f, f"d{r-1}") and _has(f, f"e{r-1}") and ("+" in f)
     if col == "C":
-        return ("min(" in f) and ("max(" in f) and _has(f, f"b{r}") and _has(f, "c17") and _has(f, "c18")
+        return ("min(" in f) and ("max(" in f) and _has(f, f"b{r}") and _has(f, p("c17")) and _has(f, p("c18"))
     if col == "D":
         return _has(f, f"b{r}") and _has(f, f"c{r}") and ("-" in f)
     if col == "E":
         return (
-            _has(f, f"d{r}") and _has(f, "c13")
-            and (_has(f, "c15") or re.search(r"/12(?![0-9])", f) is not None)
+            _has(f, f"d{r}") and _has(f, p("c13"))
+            and (_has(f, p("c15")) or re.search(r"/12(?![0-9])", f) is not None)
             and ("/" in f) and ("*" in f)
         )
     return False
 
 
-def _expected_payoff_months(ws_v, ws_f=None):
+def _expected_payoff_months(ws_v, ws_f=None, cells=None):
     """Months to pay off, simulated from the student's own parameters
     (C13 APR, C14 balance, C15 payments/yr, C17 min %, C18 fixed min).
     None if they aren't all numbers."""
+    cells = cells or {}
+
     def val(ref):
+        ref = cells.get(ref, ref)
         # Cached value, else the typed value (files never recalculated in Excel).
         v = ws_v[ref].value
         if not isinstance(v, (int, float)) and ws_f is not None:
@@ -131,7 +143,7 @@ def _detect_payoff(ws_v, rows):
     return None
 
 
-def grade_credit_card_amortization(student_file_path):
+def grade_credit_card_amortization(student_file_path, cells=None):
     """
     Grade the amortization table. Returns:
         {
@@ -140,6 +152,9 @@ def grade_credit_card_amortization(student_file_path):
             "column_points": {"B":.., "C":.., "D":.., "E":..},
             "payoff_row": {"payoff_month": int, "excel_row": int, "last_row": int},
         }
+
+    cells: where the parameters actually are when not in their green boxes
+    (from grade_credit_card_parameters' "locations").
     """
     wb_f = load_workbook(student_file_path, data_only=False)
     wb_v = load_workbook(student_file_path, data_only=True)
@@ -152,7 +167,7 @@ def grade_credit_card_amortization(student_file_path):
     # balance, score each column over the rows it SHOULD have (simulated from
     # the student's parameters), so a table cut short can't earn full marks.
     payoff_row = _detect_payoff(ws_v, rows)
-    expected_months = _expected_payoff_months(ws_v, ws_f)
+    expected_months = _expected_payoff_months(ws_v, ws_f, cells)
     comments = []
     n = len(rows)
     if payoff_row is None and expected_months and expected_months > n:
@@ -168,7 +183,7 @@ def grade_credit_card_amortization(student_file_path):
 
     for r in rows:
         for col in "BCDE":
-            if _row_ok(col, r, _norm(ws_f[f"{col}{r}"].value)):
+            if _row_ok(col, r, _norm(ws_f[f"{col}{r}"].value), cells):
                 correct[col] += 1
             else:
                 bad[col].append(f"{col}{r}")

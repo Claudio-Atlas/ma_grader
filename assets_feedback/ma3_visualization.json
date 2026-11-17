@@ -62,5 +62,6 @@
   "FREQ_COUNT_UNDERCOUNT": "Instructor check (no points deducted): the frequencies add up to {counted} of the {total} data values. This can be normal, since it often comes from the bin width or limits, which are graded separately. Please verify the bin width, limits, and boundary operators by eye.",
   "VIZ_NO_CACHED_VALUES": "Instructor check (no points deducted): this workbook was saved without calculated values (often a sign of Excel Online), so the check that the frequencies add up to all 50 data values could not run. Please glance at the Frequency column by eye.",
   "HIST_LABELS_TWO_COLUMNS": "Your chart's horizontal axis labels come from two columns (F28:G38), so the counts are mixed into the labels. In Select Data, edit the axis labels to use only the Title of Bin column (F28:F38).",
-  "HIST_EXTRA_SERIES": "Your chart plots the Title of Bin column (F28:F38) as a second set of bars. In Select Data, remove that extra series and set F28:F38 as the horizontal axis labels instead."
+  "HIST_EXTRA_SERIES": "Your chart plots the Title of Bin column (F28:F38) as a second set of bars. In Select Data, remove that extra series and set F28:F38 as the horizontal axis labels instead.",
+  "BIN_VALUE_ERROR": "Your {label} ({cell}) shows {error} instead of a number. The formula is set up right, but a cell it depends on is broken (usually one of the data cells in column B). Fix that cell so the formula can calculate."
 }

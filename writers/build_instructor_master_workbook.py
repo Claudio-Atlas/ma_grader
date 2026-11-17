@@ -49,19 +49,68 @@ MA3_SCORE_CELLS = {
 }
 MA3_SECTION_LABELS = ("Analysis Total", "Visualization Total", "")
 
-# ── MA2 grading sheet cell map ──
-# Income & Projection: F3-F8  → section sum at F9
-# Student Loans:       F10-F15 → section sum at F16
-# Credit Cards:        F17-F20 → section sum at F21
-# Annual Budget:       F22-F28 → section sum at F29 (F27 = pie chart, manual)
+# ── MA2 grading sheet ──
+# The MA2 grade sheet computes everything with formulas, which openpyxl can't
+# evaluate, so the master recomputes the same numbers from the scores:
+#   tab points    F9/F16/F21/F29 = SUM of the tab's rows (out of 26/27/42/44)
+#   scaled score  I9/I16/I21/I29 = (points / possible) * 33.25
+#   level         H9/H16/H21/H29 = 5/4/3/2/1 at 95%/80%/60%/35%
+#   template total I31 = sum of the scaled scores (out of 133)
+#   paper         F48 = SUM(F40:F47), added in I33 when the paper is graded
 
-MA2_SCORE_CELLS = {
-    "section1": ["F3", "F4", "F5", "F6", "F7", "F8"],          # Income & Projection
-    "section2": ["F10", "F11", "F12", "F13", "F14", "F15"],     # Student Loans
-    "section3": ["F17", "F18", "F19", "F20"],                    # Credit Cards
-    "section4": ["F22", "F23", "F24", "F25", "F26", "F28"],     # Annual Budget (skip F27 pie chart)
+MA2_SECTIONS = [  # (label, rubric rows) — every row counts, the pie chart (F27) included
+    ("Income and Projection", range(3, 9)),
+    ("Student Loans", range(10, 16)),
+    ("Credit Cards", range(17, 21)),
+    ("Annual Budget", range(22, 29)),
+]
+MA2_SCALE = 33.25
+MA2_PAPER_ROWS = range(40, 48)
+
+MA2_SCORE_CELLS = {  # kept for reference; MA2 totals come from _read_ma2_scores
+    f"section{i + 1}": [f"F{r}" for r in rows] for i, (_, rows) in enumerate(MA2_SECTIONS)
 }
 MA2_SECTION_LABELS = ("Income Total", "Loans Total", "Credit Total", "Budget Total")
+
+# Extra MA2 columns after the four tab totals (E-H).
+MA2_SCALED_COLS = ("I", "J", "K", "L")
+MA2_LEVEL_COLS = ("M", "N", "O", "P")
+MA2_PAPER_COL = "Q"
+MA2_SHORT = ("Income", "Loans", "Credit", "Budget")
+
+
+def _num(v):
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _ma2_level(fraction):
+    """The grade sheet's rubric level: =IF(G>=0.95,5,IF(G>=0.8,4,...))."""
+    for cutoff, level in ((0.95, 5), (0.8, 4), (0.6, 3), (0.35, 2)):
+        if fraction >= cutoff:
+            return level
+    return 1
+
+
+def _read_ma2_scores(ws) -> Dict[str, Any]:
+    """The numbers the MA2 grade sheet's own formulas produce."""
+    points, possible, scaled, levels = [], [], [], []
+    for _, rows in MA2_SECTIONS:
+        pts = sum(v for r in rows if (v := _num(ws[f"F{r}"].value)) is not None)
+        poss = sum(v for r in rows if (v := _num(ws[f"E{r}"].value)) is not None)
+        frac = pts / poss if poss else 0.0
+        points.append(pts)
+        possible.append(poss)
+        scaled.append(frac * MA2_SCALE)
+        levels.append(_ma2_level(frac))
+    paper_vals = [v for r in MA2_PAPER_ROWS if (v := _num(ws[f"F{r}"].value)) is not None]
+    return {
+        "section1": points[0], "section2": points[1], "section3": points[2], "section4": points[3],
+        "possible": possible,
+        "scaled": scaled,
+        "levels": levels,
+        "overall": sum(scaled),                                # I31
+        "paper": sum(paper_vals) if paper_vals else None,      # F48, once graded
+    }
 
 
 def _grade_files_in_folder(graded_path: str, assignment_type: str = "MA1") -> List[str]:
@@ -92,6 +141,9 @@ def _read_scores_from_graded_file(grade_path: str, assignment_type: str) -> Dict
     try:
         wb = load_workbook(grade_path, data_only=False)
         ws = wb["Grading Sheet"]
+
+        if atype == "MA2":
+            return _read_ma2_scores(ws)
 
         sections = {}
         overall = 0
@@ -126,7 +178,14 @@ def _ensure_summary_headers(ws: Worksheet, assignment_type: str = "MA1") -> None
     if atype == "MA3":
         labels = MA3_SECTION_LABELS
     elif atype == "MA2":
-        labels = MA2_SECTION_LABELS
+        labels = tuple(f"{name} (/{poss})" for (name, _), poss in zip(MA2_SECTIONS, (26, 27, 42, 44)))
+        ws[f"{COL_AUTO_TOTAL}{SUMMARY_HEADER_ROW}"].value = "Auto Total (/133)"
+        ws[f"{COL_FINAL_TOTAL}{SUMMARY_HEADER_ROW}"].value = "Final Total (with paper)"
+        for col, short in zip(MA2_SCALED_COLS, MA2_SHORT):
+            ws[f"{col}{SUMMARY_HEADER_ROW}"].value = f"{short} Scaled (/{MA2_SCALE})"
+        for col, short in zip(MA2_LEVEL_COLS, MA2_SHORT):
+            ws[f"{col}{SUMMARY_HEADER_ROW}"].value = f"{short} Level"
+        ws[f"{MA2_PAPER_COL}{SUMMARY_HEADER_ROW}"].value = "Paper Subtotal"
     else:
         labels = MA1_SECTION_LABELS
     cols = [COL_SECTION1, COL_SECTION2, COL_SECTION3, COL_SECTION4] if atype == "MA2" else [COL_SECTION1, COL_SECTION2, COL_SECTION3]
@@ -201,15 +260,18 @@ def build_instructor_master_workbook(
             ws_summary[f"{COL_NAME}{row}"].value = student_base
 
             # Auto Total (actual value)
-            ws_summary[f"{COL_AUTO_TOTAL}{row}"].value = scores["overall"]
+            ws_summary[f"{COL_AUTO_TOTAL}{row}"].value = round(scores["overall"], 2)
 
             # Manual Adj default 0
             manual_cell = f"{COL_MANUAL_ADJ}{row}"
             if ws_summary[manual_cell].value in (None, ""):
                 ws_summary[manual_cell].value = 0
 
-            # Final Total = Auto + Manual
-            ws_summary[f"{COL_FINAL_TOTAL}{row}"].value = f"={COL_AUTO_TOTAL}{row}+{COL_MANUAL_ADJ}{row}"
+            # Final Total = Auto + Manual (+ the written paper for MA2, like I33)
+            final = f"={COL_AUTO_TOTAL}{row}+{COL_MANUAL_ADJ}{row}"
+            if assignment_type.upper() == "MA2":
+                final += f"+{MA2_PAPER_COL}{row}"
+            ws_summary[f"{COL_FINAL_TOTAL}{row}"].value = final
 
             # Section totals (actual values)
             ws_summary[f"{COL_SECTION1}{row}"].value = scores["section1"]
@@ -217,6 +279,12 @@ def build_instructor_master_workbook(
             ws_summary[f"{COL_SECTION3}{row}"].value = scores["section3"]
             if assignment_type.upper() == "MA2":
                 ws_summary[f"{COL_SECTION4}{row}"].value = scores.get("section4", 0)
+                for col, v in zip(MA2_SCALED_COLS, scores["scaled"]):
+                    ws_summary[f"{col}{row}"].value = round(v, 2)
+                for col, v in zip(MA2_LEVEL_COLS, scores["levels"]):
+                    ws_summary[f"{col}{row}"].value = v
+                paper = scores["paper"]
+                ws_summary[f"{MA2_PAPER_COL}{row}"].value = round(paper, 2) if paper is not None else None
 
             row += 1
 

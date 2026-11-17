@@ -49,7 +49,7 @@ def grade_credit_cards_tab(student_file_path):
         #    - formula structure
         #    - payoff row checks
         # ==========================================================
-        amortization = grade_credit_card_amortization(student_file_path)
+        amortization = grade_credit_card_amortization(student_file_path, parameters.get("locations"))
 
         payoff_month = amortization["payoff_row"]["payoff_month"]
         excel_row = amortization["payoff_row"]["excel_row"]

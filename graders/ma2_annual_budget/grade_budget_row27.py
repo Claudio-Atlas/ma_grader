@@ -59,6 +59,8 @@ def grade_budget_row27(ws):
             total_points += 2
         else:
             comments.append("The credit card cost (C27) should pull the payment straight from the Credit Cards tab: ='Credit Cards'!C25.")
+    elif c27 in (None, ""):
+        comments.append("The credit card cost (C27) is empty. Enter a formula that points at the Credit Cards tab, ='Credit Cards'!C25, so it updates automatically.")
     else:
         comments.append("The credit card cost (C27) is typed in. Make it a formula that points at the Credit Cards tab, ='Credit Cards'!C25, so it updates automatically.")
 

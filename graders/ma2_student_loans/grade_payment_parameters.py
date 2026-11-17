@@ -1,4 +1,5 @@
 from utilities.xl import load_workbook  # strips _xlfn. prefixes
+from graders.ma2_student_loans.grade_unsubsidized_setup import is_constant
 
 def grade_payment_parameters(student_file_path):
     """
@@ -19,6 +20,7 @@ def grade_payment_parameters(student_file_path):
 
     wb = load_workbook(student_file_path, data_only=True)
     ws = wb["Student Loans"]
+    ws_f = None  # formulas, loaded only when a value wasn't saved
 
     results = {}
     total_points = 0
@@ -27,6 +29,13 @@ def grade_payment_parameters(student_file_path):
         student_val = ws[cell].value
         entry = {"points": 0, "comment": ""}
 
+        if student_val is None:
+            # No saved value (file not recalculated): a constant formula like
+            # =12 still counts.
+            if ws_f is None:
+                ws_f = load_workbook(student_file_path)["Student Loans"]
+            if is_constant(ws_f[cell].value, expected):
+                student_val = expected
         if student_val == expected:
             entry["points"] = 1
             entry["comment"] = f"{cell} value correct ({student_val})."

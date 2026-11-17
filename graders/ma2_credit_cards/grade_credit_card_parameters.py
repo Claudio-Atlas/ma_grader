@@ -36,7 +36,8 @@ def grade_credit_card_parameters(student_file_path):
         C15 Payments per Year
         C17 Min %
         C18 Fixed Minimum
-    Each worth 1 point.
+    Each worth 1 point; 0.5 when the right value was typed in the cell next
+    to its green box (e.g. D17 instead of C17).
 
     Returns:
     {
@@ -46,7 +47,8 @@ def grade_credit_card_parameters(student_file_path):
         "C17": {...},
         "C18": {...},
         "total_points": X,
-        "comment": "..."
+        "comment": "...",
+        "locations": {"C17": "D17", ...}  # only the misplaced ones
     }
     """
 
@@ -81,14 +83,60 @@ def grade_credit_card_parameters(student_file_path):
             return f"${v:,.2f}".replace(".00", "")
         return f"{v:g}"
 
+    def is_number(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    def as_number(v):
+        if is_number(v):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return float(v.strip().replace(",", "").replace("$", ""))
+            except ValueError:
+                return None
+        return None
+
+    # Where each value actually is. Usually its own green cell; when that cell
+    # is empty, a value typed one cell over (e.g. D17 instead of C17) is still
+    # the student's parameter, and their table formulas point at it.
+    locations = {}
+
     for cell, expected in checks.items():
         student_val = ws_cc[cell].value
         entry = {"points": 0, "comment": ""}
 
-        if isinstance(student_val, str):
-            try:
-                student_val = float(student_val)
-            except:
+        if student_val in (None, ""):
+            row = cell[1:]
+            moved = next((f"{col}{row}" for col in "BDEF"
+                          if as_number(ws_cc[f"{col}{row}"].value) is not None), None)
+            if moved is None:
+                entry["comment"] = (
+                    f"Your {labels[cell]} ({cell}) is empty. Enter the value from the "
+                    f"description in cell A3."
+                )
+            else:
+                locations[cell] = moved
+                found = as_number(ws_cc[moved].value)
+                if abs(found - expected) < 0.01:
+                    entry["points"] = 0.5
+                    entry["comment"] = (
+                        f"Your {labels[cell]} is in {moved} instead of {cell}. The value is right, "
+                        f"but it belongs in the green box at {cell}."
+                    )
+                else:
+                    entry["comment"] = (
+                        f"Your {labels[cell]} is in {moved} instead of {cell}, and it's "
+                        f"{show(cell, found)} where the description in cell A3 gives "
+                        f"{show(cell, expected)}. Enter the right value in {cell}."
+                    )
+            total += entry["points"]
+            results[cell] = entry
+            comments.append(entry["comment"])
+            continue
+
+        if not is_number(student_val):
+            number = as_number(student_val)
+            if number is None:
                 entry["comment"] = (
                     f"Your {labels[cell]} ({cell}) should be a number, but it contains "
                     f"{show(cell, student_val)}. Type just the number."
@@ -96,6 +144,7 @@ def grade_credit_card_parameters(student_file_path):
                 results[cell] = entry
                 comments.append(entry["comment"])
                 continue
+            student_val = number
 
         # Compare with tolerance for percentages
         if abs(student_val - expected) < 0.01:
@@ -112,6 +161,7 @@ def grade_credit_card_parameters(student_file_path):
         comments.append(entry["comment"])
 
     results["total_points"] = total
+    results["locations"] = locations
     results["comment"] = " | ".join(comments)
 
     wb.close()

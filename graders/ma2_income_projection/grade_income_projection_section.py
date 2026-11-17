@@ -2,7 +2,7 @@ from graders.ma2_income_projection.grade_current_income_reference import grade_c
 from graders.ma2_income_projection.grade_five_year_income import grade_five_year_income
 from graders.ma2_income_projection.grade_monthly_income import grade_monthly_income
 
-def grade_income_projection_section(ws):
+def grade_income_projection_section(ws, ws_data=None):
     """
     Wrapper for Income Projection section (K35–K37)
     Total: 6 points (1 + 3 + 2)
@@ -11,7 +11,7 @@ def grade_income_projection_section(ws):
 
     try:
         # --- Individual graders ---
-        income_ref = grade_current_income_reference(ws)
+        income_ref = grade_current_income_reference(ws, ws_data)
         five_year = grade_five_year_income(ws)
         monthly = grade_monthly_income(ws)
 
